@@ -9,18 +9,21 @@ namespace SimpleScheme.Test
     {
         private static void TestReadValue<TE>(string input, ObjectType type, TE expected)
         {
+            Interpreter interpreter = new Interpreter();
+
             using var reader = new StringReader(input);
-            var v = Interpreter.Read(reader);
+            var v = interpreter.Read(reader);
             Assert.Equal(type, v.Type);
             Assert.Equal(expected, v.Value<TE>());
         }
 
         private static void TestSyntaxException(string input)
         {
+            Interpreter interpreter = new Interpreter();
             using var reader = new StringReader(input);
             Assert.Throws<SyntaxError>(() =>
             {
-                var _ = Interpreter.Read(reader);
+                var _ = interpreter.Read(reader);
             });
         }
 
@@ -67,8 +70,6 @@ namespace SimpleScheme.Test
         [Fact]
         public void ReadBoolean()
         {
-            Interpreter.Initialize();
-
             var inputs = new[]
             {
                 ("#t", true),
@@ -130,6 +131,25 @@ namespace SimpleScheme.Test
             foreach (var input in inputs)
             {
                 TestSyntaxException(input);
+            }
+        }
+
+        [Fact]
+        public void ReadEmptyList()
+        {
+            var inputs = new[]
+            {
+                " (           ) "
+            };
+
+            Interpreter interpreter = new Interpreter();
+
+            foreach (var input in inputs)
+            {
+                using var reader = new StringReader(input);
+                var v = interpreter.Read(reader);
+                Assert.Equal(ObjectType.EmptyList, v.Type);
+                Assert.True(v.Equal(interpreter.EmptyList));
             }
         }
     }

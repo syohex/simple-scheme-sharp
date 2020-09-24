@@ -4,18 +4,20 @@ using System.Text;
 
 namespace SimpleScheme.Lib
 {
-    public static class Interpreter
+    public class Interpreter
     {
-        private static SchemeObject _trueObj;
-        private static SchemeObject _falseObj;
+        private readonly SchemeObject _trueObj;
+        private readonly SchemeObject _falseObj;
+        public SchemeObject EmptyList { get; }
 
-        public static void Initialize()
+        public Interpreter()
         {
             _trueObj = SchemeObject.CreateBoolean(true);
             _falseObj = SchemeObject.CreateBoolean(false);
+            EmptyList = SchemeObject.CreateEmptyList();
         }
 
-        private static SchemeObject ReadNumber(Reader reader, int c)
+        private SchemeObject ReadNumber(Reader reader, int c)
         {
             var positive = true;
             switch (c)
@@ -110,7 +112,7 @@ namespace SimpleScheme.Lib
             return SchemeObject.CreateFixnum((long) value);
         }
 
-        private static SchemeObject ReadCharacter(Reader r)
+        private SchemeObject ReadCharacter(Reader r)
         {
             int c = r.NextChar();
             switch (c)
@@ -151,7 +153,7 @@ namespace SimpleScheme.Lib
             return SchemeObject.CreateCharacter((char) c);
         }
 
-        private static SchemeObject ReadString(Reader r)
+        private SchemeObject ReadString(Reader r)
         {
             var sb = new StringBuilder();
             int c;
@@ -177,7 +179,7 @@ namespace SimpleScheme.Lib
             return SchemeObject.CreateString(sb.ToString());
         }
 
-        public static SchemeObject Read(TextReader r)
+        public SchemeObject Read(TextReader r)
         {
             var reader = new Reader(r);
 
@@ -224,7 +226,22 @@ namespace SimpleScheme.Lib
                 return ReadString(reader);
             }
 
+            if (c == '(')
+            {
+                reader.SkipWhiteSpaces();
+                c = reader.NextChar();
+                if (c == ')')
+                {
+                    return EmptyList;
+                }
+            }
+
             throw new UnsupportedDataType("got unsupported data type");
+        }
+
+        public bool IsEmptyList(SchemeObject obj)
+        {
+            return EmptyList == obj;
         }
     }
 }
