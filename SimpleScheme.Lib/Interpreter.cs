@@ -5,21 +5,26 @@ namespace SimpleScheme.Lib
 {
     public static class Interpreter
     {
-        private static SchemeObject ReadFixNum(Reader reader, int c)
+        private static SchemeObject ReadNumber(Reader reader, int c)
         {
             var positive = true;
-            if (c == '-')
+            switch (c)
             {
-                positive = false;
-            }
-            else
-            {
-                reader.PushBackCharacter(c);
+                case '+':
+                    break;
+                case '-':
+                    positive = false;
+                    break;
+                default:
+                    reader.PushBackCharacter(c);
+                    break;
             }
 
             bool hasPoint = false;
+            bool hasE = false;
             double value = 0;
             double div = 10;
+            double eValue = 0;
             while (true)
             {
                 c = reader.NextChar();
@@ -40,12 +45,27 @@ namespace SimpleScheme.Lib
                     continue;
                 }
 
+                if (c == 'e' || c == 'E')
+                {
+                    if (hasE)
+                    {
+                        throw new SyntaxError(
+                            $"floating point value has multiple 'e'(Line {reader.Line}:{reader.Column}");
+                    }
+                    hasE = true;
+                    continue;
+                }
+
                 if (!char.IsDigit((char) c))
                 {
                     break;
                 }
 
-                if (hasPoint)
+                if (hasE)
+                {
+                    eValue = eValue * 10 + c - '0';
+                }
+                else if (hasPoint)
                 {
                     value = value + ((c - '0') / div);
                     div *= 10;
@@ -59,6 +79,11 @@ namespace SimpleScheme.Lib
             if (!positive)
             {
                 value *= -1;
+            }
+
+            if (hasE && eValue != 0)
+            {
+                value *= Math.Pow(10, eValue);
             }
 
             if (!reader.IsDelimiter(c))
@@ -81,9 +106,9 @@ namespace SimpleScheme.Lib
             reader.SkipWhiteSpaces();
 
             var c = reader.NextChar();
-            if (char.IsDigit((char) c) || c == '-' && char.IsDigit((char) reader.Peek()))
+            if (char.IsDigit((char) c) || ((c == '+' || c == '-') && char.IsDigit((char) reader.Peek())))
             {
-                return ReadFixNum(reader, c);
+                return ReadNumber(reader, c);
             }
 
             throw new UnsupportedDataType("got unsupported data type");
