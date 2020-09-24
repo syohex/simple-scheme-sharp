@@ -5,6 +5,15 @@ namespace SimpleScheme.Lib
 {
     public static class Interpreter
     {
+        private static SchemeObject _trueObj;
+        private static SchemeObject _falseObj;
+
+        public static void Initialize()
+        {
+            _trueObj = SchemeObject.CreateBoolean(true);
+            _falseObj = SchemeObject.CreateBoolean(false);
+        }
+
         private static SchemeObject ReadNumber(Reader reader, int c)
         {
             var positive = true;
@@ -16,7 +25,7 @@ namespace SimpleScheme.Lib
                     positive = false;
                     break;
                 default:
-                    reader.PushBackCharacter(c);
+                    reader.PutBackCharacter(c);
                     break;
             }
 
@@ -52,6 +61,7 @@ namespace SimpleScheme.Lib
                         throw new SyntaxError(
                             $"floating point value has multiple 'e'(Line {reader.Line}:{reader.Column}");
                     }
+
                     hasE = true;
                     continue;
                 }
@@ -88,7 +98,7 @@ namespace SimpleScheme.Lib
 
             if (!reader.IsDelimiter(c))
             {
-                throw new SyntaxError($"number is not followed by delimiter(Line {reader.Line}:{reader.Column})");
+                throw new SyntaxError($"number is not followed by delimiter({reader.PosInfo()})");
             }
 
             if (hasPoint)
@@ -97,6 +107,47 @@ namespace SimpleScheme.Lib
             }
 
             return SchemeObject.CreateFixnum((long) value);
+        }
+
+        private static SchemeObject ReadCharacter(Reader r)
+        {
+            int c = r.NextChar();
+            switch (c)
+            {
+                case -1: // EOF
+                    break;
+                case 's':
+                    if (r.Match("pace"))
+                    {
+                        if (!r.IsDelimiter(r.Peek()))
+                        {
+                            throw new SyntaxError($"Unexpected character followed by #\\space({r.PosInfo()}");
+                        }
+
+                        return SchemeObject.CreateCharacter(' ');
+                    }
+
+                    break;
+                case 'n':
+                    if (r.Match("ewline"))
+                    {
+                        if (!r.IsDelimiter(r.Peek()))
+                        {
+                            throw new SyntaxError($"Unexpected character followed by #\\newline({r.PosInfo()}");
+                        }
+
+                        return SchemeObject.CreateCharacter('\n');
+                    }
+
+                    break;
+            }
+
+            if (!r.IsDelimiter(r.Peek()))
+            {
+                throw new SyntaxError($"Unexpected character followed by #\\({r.PosInfo()}");
+            }
+
+            return SchemeObject.CreateCharacter((char) c);
         }
 
         public static SchemeObject Read(TextReader r)
@@ -109,6 +160,22 @@ namespace SimpleScheme.Lib
             if (char.IsDigit((char) c) || ((c == '+' || c == '-') && char.IsDigit((char) reader.Peek())))
             {
                 return ReadNumber(reader, c);
+            }
+
+            if (c == '#')
+            {
+                c = reader.NextChar();
+                switch (c)
+                {
+                    case 't':
+                        return _trueObj;
+                    case 'f':
+                        return _falseObj;
+                    case '\\':
+                        return ReadCharacter(reader);
+                    default:
+                        throw new SyntaxError($"unknown '#' literal {reader.PosInfo()}");
+                }
             }
 
             throw new UnsupportedDataType("got unsupported data type");

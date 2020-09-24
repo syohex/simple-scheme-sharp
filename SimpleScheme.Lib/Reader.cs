@@ -31,7 +31,7 @@ namespace SimpleScheme.Lib
             return _reader.Read();
         }
 
-        public void PushBackCharacter(int c)
+        public void PutBackCharacter(int c)
         {
             if (c == -1) // EOF
             {
@@ -55,6 +55,20 @@ namespace SimpleScheme.Lib
             }
 
             return _reader.Peek();
+        }
+
+        public bool Match(string pattern)
+        {
+            foreach (var c in pattern)
+            {
+                if (NextChar() != c)
+                {
+                    PutBackCharacter(c);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public void SkipWhiteSpaces()
@@ -82,7 +96,7 @@ namespace SimpleScheme.Lib
                     continue;
                 }
 
-                PushBackCharacter(c);
+                PutBackCharacter(c);
                 break;
             }
         }
@@ -91,6 +105,11 @@ namespace SimpleScheme.Lib
         {
             // -1 means EOF
             return char.IsWhiteSpace((char) c) || c == -1 || c == '(' || c == ')' || c == '"' || c == ';';
+        }
+
+        public string PosInfo()
+        {
+            return $"Line {_line}:{_column}";
         }
 
         public int Line => _line;

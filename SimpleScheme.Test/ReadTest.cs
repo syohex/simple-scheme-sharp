@@ -7,6 +7,14 @@ namespace SimpleScheme.Test
 {
     public class ReadTest
     {
+        private static void CheckReadValue<TE>(string input, ObjectType type, TE expected)
+        {
+            using var reader = new StringReader(input);
+            var v = Interpreter.Read(reader);
+            Assert.Equal(type, v.Type);
+            Assert.Equal(expected, v.Value<TE>());
+        }
+
         [Fact]
         public void ReadFixnum()
         {
@@ -19,10 +27,7 @@ namespace SimpleScheme.Test
             };
             foreach (var (input, expected) in inputs)
             {
-                using var reader = new StringReader(input);
-                var v = Interpreter.Read(reader);
-                Assert.Equal(ObjectType.Fixnum, v.Type);
-                Assert.Equal(expected, v.Value<long>());
+                CheckReadValue(input, ObjectType.Fixnum, expected);
             }
         }
 
@@ -36,10 +41,7 @@ namespace SimpleScheme.Test
             };
             foreach (var (input, expected) in inputs)
             {
-                using var reader = new StringReader(input);
-                var v = Interpreter.Read(reader);
-                Assert.Equal(ObjectType.Float, v.Type);
-                Assert.Equal(expected, v.Value<double>());
+                CheckReadValue(input, ObjectType.Float, expected);
             }
         }
 
@@ -52,6 +54,40 @@ namespace SimpleScheme.Test
             {
                 var _ = Interpreter.Read(reader);
             });
+        }
+
+        [Fact]
+        public void ReadBoolean()
+        {
+            Interpreter.Initialize();
+
+            var inputs = new[]
+            {
+                ("#t", true),
+                ("#f", false)
+            };
+
+            foreach (var (input, expected) in inputs)
+            {
+                CheckReadValue(input, ObjectType.Boolean, expected);
+            }
+        }
+
+        [Fact]
+        public void ReadCharacter()
+        {
+            var inputs = new[]
+            {
+                ("#\\space", ' '),
+                ("#\\newline", '\n'),
+                ("#\\a", 'a'),
+                ("#\\Z", 'Z')
+            };
+
+            foreach (var (input, expected) in inputs)
+            {
+                CheckReadValue(input, ObjectType.Character, expected);
+            }
         }
     }
 }

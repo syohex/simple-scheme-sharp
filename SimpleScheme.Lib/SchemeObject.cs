@@ -4,7 +4,9 @@ namespace SimpleScheme.Lib
     {
         Fixnum,
         Float,
-        String
+        String,
+        Boolean,
+        Character
     }
 
     public class SchemeObject
@@ -27,6 +29,16 @@ namespace SimpleScheme.Lib
         public static SchemeObject CreateFloat(double value)
         {
             return new SchemeObject(ObjectType.Float, value);
+        }
+
+        public static SchemeObject CreateBoolean(bool value)
+        {
+            return new SchemeObject(ObjectType.Boolean, value);
+        }
+
+        public static SchemeObject CreateCharacter(char value)
+        {
+            return new SchemeObject(ObjectType.Character, value);
         }
 
         public T Value<T>()
