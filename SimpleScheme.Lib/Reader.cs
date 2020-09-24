@@ -33,6 +33,11 @@ namespace SimpleScheme.Lib
 
         public void PushBackCharacter(int c)
         {
+            if (c == -1) // EOF
+            {
+                return;
+            }
+
             --_column;
             if (_buffer != -1)
             {
@@ -44,7 +49,10 @@ namespace SimpleScheme.Lib
 
         public int Peek()
         {
-            if (_buffer != -1) return _buffer;
+            if (_buffer != -1)
+            {
+                return _buffer;
+            }
 
             return _reader.Peek();
         }

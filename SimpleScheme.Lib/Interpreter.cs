@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 namespace SimpleScheme.Lib
@@ -8,27 +9,69 @@ namespace SimpleScheme.Lib
         {
             var positive = true;
             if (c == '-')
+            {
                 positive = false;
+            }
             else
+            {
                 reader.PushBackCharacter(c);
+            }
 
-            long value = 0;
+            bool hasPoint = false;
+            double value = 0;
+            double div = 10;
             while (true)
             {
                 c = reader.NextChar();
-                if (!char.IsDigit((char) c)) break;
+                if (c == -1)
+                {
+                    break;
+                }
 
-                value = value * 10 + (c - '0');
+                if (c == '.')
+                {
+                    if (hasPoint)
+                    {
+                        throw new SyntaxError(
+                            $"floating point value has multiple dot(Line {reader.Line}:{reader.Column}");
+                    }
+
+                    hasPoint = true;
+                    continue;
+                }
+
+                if (!char.IsDigit((char) c))
+                {
+                    break;
+                }
+
+                if (hasPoint)
+                {
+                    value = value + ((c - '0') / div);
+                    div *= 10;
+                }
+                else
+                {
+                    value = value * 10 + (c - '0');
+                }
             }
 
-            if (!positive) value *= -1;
+            if (!positive)
+            {
+                value *= -1;
+            }
 
             if (!reader.IsDelimiter(c))
             {
                 throw new SyntaxError($"number is not followed by delimiter(Line {reader.Line}:{reader.Column})");
             }
 
-            return SchemeObject.CreateFixnum(value);
+            if (hasPoint)
+            {
+                return SchemeObject.CreateFloat(value);
+            }
+
+            return SchemeObject.CreateFixnum((long) value);
         }
 
         public static SchemeObject Read(TextReader r)

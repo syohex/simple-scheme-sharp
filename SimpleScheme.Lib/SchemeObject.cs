@@ -24,6 +24,11 @@ namespace SimpleScheme.Lib
             return new SchemeObject(ObjectType.Fixnum, value);
         }
 
+        public static SchemeObject CreateFloat(double value)
+        {
+            return new SchemeObject(ObjectType.Float, value);
+        }
+
         public T Value<T>()
         {
             return (T)_value;
