@@ -7,12 +7,21 @@ namespace SimpleScheme.Test
 {
     public class ReadTest
     {
-        private static void CheckReadValue<TE>(string input, ObjectType type, TE expected)
+        private static void TestReadValue<TE>(string input, ObjectType type, TE expected)
         {
             using var reader = new StringReader(input);
             var v = Interpreter.Read(reader);
             Assert.Equal(type, v.Type);
             Assert.Equal(expected, v.Value<TE>());
+        }
+
+        private static void TestSyntaxException(string input)
+        {
+            using var reader = new StringReader(input);
+            Assert.Throws<SyntaxError>(() =>
+            {
+                var _ = Interpreter.Read(reader);
+            });
         }
 
         [Fact]
@@ -27,7 +36,7 @@ namespace SimpleScheme.Test
             };
             foreach (var (input, expected) in inputs)
             {
-                CheckReadValue(input, ObjectType.Fixnum, expected);
+                TestReadValue(input, ObjectType.Fixnum, expected);
             }
         }
 
@@ -41,19 +50,18 @@ namespace SimpleScheme.Test
             };
             foreach (var (input, expected) in inputs)
             {
-                CheckReadValue(input, ObjectType.Float, expected);
+                TestReadValue(input, ObjectType.Float, expected);
             }
         }
 
         [Fact]
         public void ReadInvalidFloatingNumber()
         {
-            var input = "123.5.123";
-            using var reader = new StringReader(input);
-            Assert.Throws<SyntaxError>(() =>
+            var inputs = new[] {"123.5.123", "123e1234e"};
+            foreach (var input in inputs)
             {
-                var _ = Interpreter.Read(reader);
-            });
+                TestSyntaxException(input);
+            }
         }
 
         [Fact]
@@ -69,7 +77,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in inputs)
             {
-                CheckReadValue(input, ObjectType.Boolean, expected);
+                TestReadValue(input, ObjectType.Boolean, expected);
             }
         }
 
@@ -86,7 +94,42 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in inputs)
             {
-                CheckReadValue(input, ObjectType.Character, expected);
+                TestReadValue(input, ObjectType.Character, expected);
+            }
+        }
+
+        [Fact]
+        public void ReadCharacterInvalid()
+        {
+            var inputs = new[] {"#\\spaces", "#foo"};
+            foreach (var input in inputs)
+            {
+                TestSyntaxException(input);
+            }
+        }
+
+        [Fact]
+        public void ReadString()
+        {
+            var inputs = new[]
+            {
+                ("\"foobar\"", "foobar"),
+                ("\"foo\\nbar\"", "foo\nbar"),
+            };
+
+            foreach (var (input, expected) in inputs)
+            {
+                TestReadValue(input, ObjectType.String, expected);
+            }
+        }
+
+        [Fact]
+        public void ReadStringInvalid()
+        {
+            var inputs = new[] {"\"foo"};
+            foreach (var input in inputs)
+            {
+                TestSyntaxException(input);
             }
         }
     }

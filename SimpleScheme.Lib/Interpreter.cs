@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 
 namespace SimpleScheme.Lib
 {
@@ -150,6 +151,32 @@ namespace SimpleScheme.Lib
             return SchemeObject.CreateCharacter((char) c);
         }
 
+        private static SchemeObject ReadString(Reader r)
+        {
+            var sb = new StringBuilder();
+            int c;
+            while ((c = r.NextChar()) != '"')
+            {
+                switch (c)
+                {
+                    case '\\':
+                        c = r.NextChar();
+                        if (c == 'n')
+                        {
+                            c = '\n';
+                        }
+
+                        break;
+                    case -1: // EOF
+                        throw new SyntaxError($"string is un-terminated({r.PosInfo()})");
+                }
+
+                sb.Append((char) c);
+            }
+
+            return SchemeObject.CreateString(sb.ToString());
+        }
+
         public static SchemeObject Read(TextReader r)
         {
             var reader = new Reader(r);
@@ -157,25 +184,44 @@ namespace SimpleScheme.Lib
             reader.SkipWhiteSpaces();
 
             var c = reader.NextChar();
+
+            // Number(Fixnum, Float)
             if (char.IsDigit((char) c) || ((c == '+' || c == '-') && char.IsDigit((char) reader.Peek())))
             {
                 return ReadNumber(reader, c);
             }
 
+            // Character or Boolean
             if (c == '#')
             {
                 c = reader.NextChar();
                 switch (c)
                 {
                     case 't':
+                        if (!reader.IsDelimiter(reader.Peek()))
+                        {
+                            throw new SyntaxError($"invalid character after #t {reader.PosInfo()}");
+                        }
+
                         return _trueObj;
                     case 'f':
+                        if (!reader.IsDelimiter(reader.Peek()))
+                        {
+                            throw new SyntaxError($"invalid character after #f {reader.PosInfo()}");
+                        }
+
                         return _falseObj;
                     case '\\':
                         return ReadCharacter(reader);
                     default:
                         throw new SyntaxError($"unknown '#' literal {reader.PosInfo()}");
                 }
+            }
+
+            // String
+            if (c == '"')
+            {
+                return ReadString(reader);
             }
 
             throw new UnsupportedDataType("got unsupported data type");

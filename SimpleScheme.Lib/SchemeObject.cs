@@ -41,6 +41,11 @@ namespace SimpleScheme.Lib
             return new SchemeObject(ObjectType.Character, value);
         }
 
+        public static SchemeObject CreateString(string value)
+        {
+            return new SchemeObject(ObjectType.String, value);
+        }
+
         public T Value<T>()
         {
             return (T)_value;
