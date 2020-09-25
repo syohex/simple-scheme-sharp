@@ -179,64 +179,104 @@ namespace SimpleScheme.Lib
             return SchemeObject.CreateString(sb.ToString());
         }
 
-        public SchemeObject Read(TextReader r)
+        private SchemeObject ReadPair(Reader r)
         {
-            var reader = new Reader(r);
+            r.SkipWhiteSpaces();
 
-            reader.SkipWhiteSpaces();
+            int c = r.NextChar();
+            if (c == ')')
+            {
+                return EmptyList;
+            }
 
-            var c = reader.NextChar();
+            r.PutBackCharacter(c);
+
+            SchemeObject car = Read(r);
+            r.SkipWhiteSpaces();
+
+            SchemeObject cdr;
+            c = r.NextChar();
+            if (c == '.') // dotted pair
+            {
+                if (!r.IsDelimiter(r.Peek()))
+                {
+                    throw new SyntaxError($"dot is not followed by delimiter({r.PosInfo()})");
+                }
+
+                cdr = Read(r);
+                r.SkipWhiteSpaces();
+
+                c = r.NextChar();
+                if (c != ')')
+                {
+                    throw new SyntaxError($"dotted pair is not closed({r.PosInfo()})");
+                }
+
+                return SchemeObject.CreatePair(car, cdr);
+            }
+
+            r.PutBackCharacter(c);
+
+            cdr = ReadPair(r);
+            return SchemeObject.CreatePair(car, cdr);
+        }
+
+        private SchemeObject Read(Reader r)
+        {
+            r.SkipWhiteSpaces();
+
+            var c = r.NextChar();
 
             // Number(Fixnum, Float)
-            if (char.IsDigit((char) c) || ((c == '+' || c == '-') && char.IsDigit((char) reader.Peek())))
+            if (char.IsDigit((char) c) || ((c == '+' || c == '-') && char.IsDigit((char) r.Peek())))
             {
-                return ReadNumber(reader, c);
+                return ReadNumber(r, c);
             }
 
             // Character or Boolean
             if (c == '#')
             {
-                c = reader.NextChar();
+                c = r.NextChar();
                 switch (c)
                 {
                     case 't':
-                        if (!reader.IsDelimiter(reader.Peek()))
+                        if (!r.IsDelimiter(r.Peek()))
                         {
-                            throw new SyntaxError($"invalid character after #t {reader.PosInfo()}");
+                            throw new SyntaxError($"invalid character after #t {r.PosInfo()}");
                         }
 
                         return _trueObj;
                     case 'f':
-                        if (!reader.IsDelimiter(reader.Peek()))
+                        if (!r.IsDelimiter(r.Peek()))
                         {
-                            throw new SyntaxError($"invalid character after #f {reader.PosInfo()}");
+                            throw new SyntaxError($"invalid character after #f {r.PosInfo()}");
                         }
 
                         return _falseObj;
                     case '\\':
-                        return ReadCharacter(reader);
+                        return ReadCharacter(r);
                     default:
-                        throw new SyntaxError($"unknown '#' literal {reader.PosInfo()}");
+                        throw new SyntaxError($"unknown '#' literal {r.PosInfo()}");
                 }
             }
 
             // String
             if (c == '"')
             {
-                return ReadString(reader);
+                return ReadString(r);
             }
 
             if (c == '(')
             {
-                reader.SkipWhiteSpaces();
-                c = reader.NextChar();
-                if (c == ')')
-                {
-                    return EmptyList;
-                }
+                return ReadPair(r);
             }
 
             throw new UnsupportedDataType("got unsupported data type");
+        }
+
+        public SchemeObject Read(TextReader reader)
+        {
+            return Read(new Reader(reader));
         }
 
         public bool IsEmptyList(SchemeObject obj)

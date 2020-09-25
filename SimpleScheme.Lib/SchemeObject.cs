@@ -10,7 +10,37 @@ namespace SimpleScheme.Lib
         String,
         Boolean,
         Character,
-        EmptyList
+        EmptyList,
+        Pair
+    }
+
+    public class Pair
+    {
+        public SchemeObject Car { get; }
+        public SchemeObject Cdr { get; }
+
+        public Pair(SchemeObject car, SchemeObject cdr)
+        {
+            Car = car;
+            Cdr = cdr;
+        }
+
+        public override string ToString()
+        {
+            string carStr = Car.ToString();
+            switch (Cdr.Type)
+            {
+                case ObjectType.Pair:
+                    return $"{carStr} {Cdr}";
+                case ObjectType.EmptyList:
+                    return "";
+                default:
+                {
+                    string cdrStr = Cdr.ToString();
+                    return $"{carStr} . {cdrStr}";
+                }
+            }
+        }
     }
 
     public class SchemeObject
@@ -52,6 +82,11 @@ namespace SimpleScheme.Lib
         public static SchemeObject CreateEmptyList()
         {
             return new SchemeObject(ObjectType.EmptyList, null);
+        }
+
+        public static SchemeObject CreatePair(SchemeObject car, SchemeObject cdr)
+        {
+            return new SchemeObject(ObjectType.Pair, new Pair(car, cdr));
         }
 
         public T Value<T>()
@@ -100,6 +135,8 @@ namespace SimpleScheme.Lib
                     return Value<bool>() ? "#t" : "#f";
                 case ObjectType.EmptyList:
                     return "()";
+                case ObjectType.Pair:
+                    return $"({Value<Pair>()}";
                 default:
                     throw new ArgumentOutOfRangeException();
             }

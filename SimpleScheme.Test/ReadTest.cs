@@ -139,10 +139,11 @@ namespace SimpleScheme.Test
         {
             var inputs = new[]
             {
-                " (           ) "
+                " (           ) ",
+                "()"
             };
 
-            Interpreter interpreter = new Interpreter();
+            var interpreter = new Interpreter();
 
             foreach (var input in inputs)
             {
@@ -151,6 +152,38 @@ namespace SimpleScheme.Test
                 Assert.Equal(ObjectType.EmptyList, v.Type);
                 Assert.True(v.Equal(interpreter.EmptyList));
             }
+        }
+
+        [Fact]
+        public void ReadPair()
+        {
+            var interpreter = new Interpreter();
+            using var reader = new StringReader("(42 #t #\\c \"foo\")");
+            var v = interpreter.Read(reader);
+            var p = v.Value<Pair>();
+            Assert.Equal(42, p.Car.Value<long>());
+
+            p = p.Cdr.Value<Pair>();
+            Assert.True(p.Car.Value<bool>());
+
+            p = p.Cdr.Value<Pair>();
+            Assert.Equal('c', p.Car.Value<char>());
+
+            p = p.Cdr.Value<Pair>();
+            Assert.Equal("foo", p.Car.Value<string>());
+
+            Assert.Equal(ObjectType.EmptyList, p.Cdr.Type);
+        }
+
+        [Fact]
+        public void ReadDottedPair()
+        {
+            var interpreter = new Interpreter();
+            using var reader = new StringReader("(#t . #f)");
+            var v = interpreter.Read(reader);
+            var p = v.Value<Pair>();
+            Assert.True(p.Car.Value<bool>());
+            Assert.False(p.Cdr.Value<bool>());
         }
     }
 }
