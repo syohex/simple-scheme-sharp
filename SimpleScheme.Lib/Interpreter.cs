@@ -89,6 +89,7 @@ namespace SimpleScheme.Lib
             double value = 0;
             double div = 10;
             double eValue = 0;
+            double eSign = 1;
             while (true)
             {
                 c = reader.NextChar();
@@ -121,6 +122,12 @@ namespace SimpleScheme.Lib
                     continue;
                 }
 
+                if (hasE && (c == '+' || c == '-'))
+                {
+                    eSign = c == '-' ? -1 : 1;
+                    continue;
+                }
+
                 if (!char.IsDigit((char) c))
                 {
                     break;
@@ -148,7 +155,7 @@ namespace SimpleScheme.Lib
 
             if (hasE && eValue != 0)
             {
-                value *= Math.Pow(10, eValue);
+                value *= Math.Pow(10, eSign * eValue);
             }
 
             if (!IsDelimiter(c))
@@ -156,7 +163,7 @@ namespace SimpleScheme.Lib
                 throw new SyntaxError($"number is not followed by delimiter({reader.PosInfo()})");
             }
 
-            if (hasPoint)
+            if (hasPoint || (hasE && eSign == -1))
             {
                 return SchemeObject.CreateFloat(value);
             }

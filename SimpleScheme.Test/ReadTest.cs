@@ -50,7 +50,8 @@ namespace SimpleScheme.Test
             var inputs = new[]
             {
                 ("  123.5 ", 123.5),
-                ("45.25", 45.25)
+                ("45.25", 45.25),
+                ("5e-1", 0.5)
             };
             foreach (var (input, expected) in inputs)
             {
