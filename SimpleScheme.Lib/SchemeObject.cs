@@ -11,7 +11,8 @@ namespace SimpleScheme.Lib
         Boolean,
         Character,
         EmptyList,
-        Pair
+        Pair,
+        Symbol
     }
 
     public class Pair
@@ -31,9 +32,12 @@ namespace SimpleScheme.Lib
             switch (Cdr.Type)
             {
                 case ObjectType.Pair:
-                    return $"{carStr} {Cdr}";
+                {
+                    var rest = Cdr.Value<Pair>();
+                    return $"{carStr} {rest}";
+                }
                 case ObjectType.EmptyList:
-                    return "";
+                    return carStr;
                 default:
                 {
                     string cdrStr = Cdr.ToString();
@@ -81,12 +85,17 @@ namespace SimpleScheme.Lib
 
         public static SchemeObject CreateEmptyList()
         {
-            return new SchemeObject(ObjectType.EmptyList, null);
+            return new SchemeObject(ObjectType.EmptyList, 0); // dummy value
         }
 
         public static SchemeObject CreatePair(SchemeObject car, SchemeObject cdr)
         {
             return new SchemeObject(ObjectType.Pair, new Pair(car, cdr));
+        }
+
+        public static SchemeObject CreateSymbol(string name)
+        {
+            return new SchemeObject(ObjectType.Symbol, name);
         }
 
         public T Value<T>()
@@ -96,11 +105,6 @@ namespace SimpleScheme.Lib
 
         public bool Equal(SchemeObject obj)
         {
-            if (obj == null)
-            {
-                return false;
-            }
-
             switch (Type)
             {
                 case ObjectType.Fixnum:
@@ -113,6 +117,7 @@ namespace SimpleScheme.Lib
                     return Value<char>() == obj.Value<char>();
                 case ObjectType.Boolean:
                 case ObjectType.EmptyList:
+                case ObjectType.Symbol:
                     return this == obj;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -136,7 +141,11 @@ namespace SimpleScheme.Lib
                 case ObjectType.EmptyList:
                     return "()";
                 case ObjectType.Pair:
-                    return $"({Value<Pair>()}";
+                {
+                    return $"({Value<Pair>()})";
+                }
+                case ObjectType.Symbol:
+                    return Value<string>();
                 default:
                     throw new ArgumentOutOfRangeException();
             }

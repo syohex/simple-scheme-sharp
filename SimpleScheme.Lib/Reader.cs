@@ -101,12 +101,6 @@ namespace SimpleScheme.Lib
             }
         }
 
-        public bool IsDelimiter(int c)
-        {
-            // -1 means EOF
-            return char.IsWhiteSpace((char) c) || c == -1 || c == '(' || c == ')' || c == '"' || c == ';';
-        }
-
         public string PosInfo()
         {
             return $"Line {_line}:{_column}";

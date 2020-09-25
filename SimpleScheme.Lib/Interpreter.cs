@@ -1,20 +1,72 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace SimpleScheme.Lib
 {
+    internal class SymbolTable
+    {
+        private readonly Dictionary<string, SchemeObject> _table;
+
+        public SymbolTable()
+        {
+            _table = new Dictionary<string, SchemeObject>();
+        }
+
+        public SchemeObject? LookUp(string name)
+        {
+            if (_table.TryGetValue(name, out SchemeObject symbol))
+            {
+                return symbol;
+            }
+
+            return null;
+        }
+
+        public void RegisterSymbol(string name, SchemeObject symbol)
+        {
+            _table[name] = symbol;
+        }
+    }
+
     public class Interpreter
     {
         private readonly SchemeObject _trueObj;
         private readonly SchemeObject _falseObj;
         public SchemeObject EmptyList { get; }
+        private readonly SymbolTable _symbolTable;
 
         public Interpreter()
         {
             _trueObj = SchemeObject.CreateBoolean(true);
             _falseObj = SchemeObject.CreateBoolean(false);
             EmptyList = SchemeObject.CreateEmptyList();
+
+            _symbolTable = new SymbolTable();
+        }
+
+        private bool IsAlphabetic(int c)
+        {
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        }
+
+        private bool IsDigit(int c)
+        {
+            return c >= '0' && c <= '9';
+        }
+
+        private bool IsDelimiter(int c)
+        {
+            // -1 means EOF
+            return char.IsWhiteSpace((char) c) || c == -1 || c == '(' || c == ')' || c == '"' || c == ';';
+        }
+
+        private bool IsSymbolCharacter(int c)
+        {
+            int[] cs = {'*', '+', '-', '/', '>', '<', '=', '?', '!'};
+            return IsAlphabetic(c) || ((IList) cs).Contains(c);
         }
 
         private SchemeObject ReadNumber(Reader reader, int c)
@@ -99,7 +151,7 @@ namespace SimpleScheme.Lib
                 value *= Math.Pow(10, eValue);
             }
 
-            if (!reader.IsDelimiter(c))
+            if (!IsDelimiter(c))
             {
                 throw new SyntaxError($"number is not followed by delimiter({reader.PosInfo()})");
             }
@@ -122,7 +174,7 @@ namespace SimpleScheme.Lib
                 case 's':
                     if (r.Match("pace"))
                     {
-                        if (!r.IsDelimiter(r.Peek()))
+                        if (!IsDelimiter(r.Peek()))
                         {
                             throw new SyntaxError($"Unexpected character followed by #\\space({r.PosInfo()}");
                         }
@@ -134,7 +186,7 @@ namespace SimpleScheme.Lib
                 case 'n':
                     if (r.Match("ewline"))
                     {
-                        if (!r.IsDelimiter(r.Peek()))
+                        if (!IsDelimiter(r.Peek()))
                         {
                             throw new SyntaxError($"Unexpected character followed by #\\newline({r.PosInfo()}");
                         }
@@ -145,7 +197,7 @@ namespace SimpleScheme.Lib
                     break;
             }
 
-            if (!r.IsDelimiter(r.Peek()))
+            if (!IsDelimiter(r.Peek()))
             {
                 throw new SyntaxError($"Unexpected character followed by #\\({r.PosInfo()}");
             }
@@ -198,7 +250,7 @@ namespace SimpleScheme.Lib
             c = r.NextChar();
             if (c == '.') // dotted pair
             {
-                if (!r.IsDelimiter(r.Peek()))
+                if (!IsDelimiter(r.Peek()))
                 {
                     throw new SyntaxError($"dot is not followed by delimiter({r.PosInfo()})");
                 }
@@ -221,6 +273,42 @@ namespace SimpleScheme.Lib
             return SchemeObject.CreatePair(car, cdr);
         }
 
+        private SchemeObject Intern(string name)
+        {
+            SchemeObject? obj = _symbolTable.LookUp(name);
+            if (obj != null)
+            {
+                return obj;
+            }
+
+            SchemeObject sym = SchemeObject.CreateSymbol(name);
+            _symbolTable.RegisterSymbol(name, sym);
+            return sym;
+        }
+
+        private SchemeObject ReadSymbol(Reader r, int c)
+        {
+            var sb = new StringBuilder();
+            while (true)
+            {
+                if (!(IsSymbolCharacter(c) || IsDigit(c)))
+                {
+                    break;
+                }
+
+                sb.Append((char) c);
+                c = r.NextChar();
+            }
+
+            if (!IsDelimiter(c))
+            {
+                throw new SyntaxError($"symbol '{sb}' is not followed by delimiter({r.PosInfo()})");
+            }
+
+            r.PutBackCharacter(c);
+            return Intern(sb.ToString());
+        }
+
         private SchemeObject Read(Reader r)
         {
             r.SkipWhiteSpaces();
@@ -240,14 +328,14 @@ namespace SimpleScheme.Lib
                 switch (c)
                 {
                     case 't':
-                        if (!r.IsDelimiter(r.Peek()))
+                        if (!IsDelimiter(r.Peek()))
                         {
                             throw new SyntaxError($"invalid character after #t {r.PosInfo()}");
                         }
 
                         return _trueObj;
                     case 'f':
-                        if (!r.IsDelimiter(r.Peek()))
+                        if (!IsDelimiter(r.Peek()))
                         {
                             throw new SyntaxError($"invalid character after #f {r.PosInfo()}");
                         }
@@ -266,9 +354,16 @@ namespace SimpleScheme.Lib
                 return ReadString(r);
             }
 
+            // Pair
             if (c == '(')
             {
                 return ReadPair(r);
+            }
+
+            // Symbol
+            if (IsSymbolCharacter(c))
+            {
+                return ReadSymbol(r, c);
             }
 
             throw new UnsupportedDataType("got unsupported data type");

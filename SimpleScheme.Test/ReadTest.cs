@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using SimpleScheme.Lib;
 using Xunit;
@@ -184,6 +185,29 @@ namespace SimpleScheme.Test
             var p = v.Value<Pair>();
             Assert.True(p.Car.Value<bool>());
             Assert.False(p.Cdr.Value<bool>());
+        }
+
+        [Fact]
+        public void ReadSymbol()
+        {
+            string[] inputs =
+            {
+                "foo",
+                "bar",
+                "foo"
+            };
+
+            var interpreter = new Interpreter();
+            var objs = new List<SchemeObject>();
+            foreach (var input in inputs)
+            {
+                using var reader = new StringReader(input);
+                objs.Add(interpreter.Read(reader));
+            }
+
+            // same name symbols are same object
+            Assert.True(objs[0] == objs[2]);
+            Assert.True(objs[0] != objs[1]);
         }
     }
 }
