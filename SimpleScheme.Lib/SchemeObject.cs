@@ -295,6 +295,18 @@ namespace SimpleScheme.Lib
             }
         }
 
+        public bool IsListType()
+        {
+            switch (Type)
+            {
+                case ObjectType.EmptyList:
+                case ObjectType.Pair:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public bool IsApplicable()
         {
             switch (Type)
@@ -320,6 +332,35 @@ namespace SimpleScheme.Lib
         public bool IsUndefined()
         {
             return Type == ObjectType.Undefined;
+        }
+
+        private SchemeObject EvalLambda(Environment env, SchemeObject expr)
+        {
+            if (expr.Type != ObjectType.Pair)
+            {
+                throw new SyntaxError($"invalid application {this}");
+            }
+
+            var pair = expr.Value<Pair>();
+            var firstArg = pair.Car.Value<Pair>();
+            if (firstArg.Car.Type != ObjectType.Symbol)
+            {
+                throw new SyntaxError($"invalid application {this}");
+            }
+
+            var sym = firstArg.Car.Value<Symbol>();
+            if (sym.Name != "lambda")
+            {
+                throw new SyntaxError($"invalid application {this}");
+            }
+
+            var closure = pair.Car.Eval(env);
+            if (closure.Type != ObjectType.Closure)
+            {
+                throw new InternalException("evaluated value of lambda is not closure");
+            }
+
+            return closure.Apply(env, pair.Cdr);
         }
 
         public SchemeObject Eval(Environment env)
@@ -361,30 +402,15 @@ namespace SimpleScheme.Lib
                                 throw new SyntaxError($"{application} is not an application");
                             }
 
+                            if (application.Type == ObjectType.Pair)
+                            {
+                                return EvalLambda(env, application);
+                            }
+
                             return application.Apply(env, pair.Cdr);
                         }
                         case ObjectType.Pair:
-                        {
-                            var firstArg = pair.Car.Value<Pair>();
-                            if (firstArg.Car.Type != ObjectType.Symbol)
-                            {
-                                throw new SyntaxError($"invalid application {firstArg}");
-                            }
-
-                            var sym = firstArg.Car.Value<Symbol>();
-                            if (sym.Name != "lambda")
-                            {
-                                throw new SyntaxError($"invalid application {firstArg}");
-                            }
-
-                            var closure = pair.Car.Eval(env);
-                            if (closure.Type != ObjectType.Closure)
-                            {
-                                throw new InternalException("evaluated value of lambda is not closure");
-                            }
-
-                            return closure.Apply(env, pair.Cdr);
-                        }
+                            return EvalLambda(env, this);
                         default:
                             throw new SyntaxError($"cannot evaluated: {this}");
                     }
@@ -437,7 +463,7 @@ namespace SimpleScheme.Lib
                     return closure.Apply(env, evaluatedArgs);
                 }
                 default:
-                    throw new Exception($"unsupported yet: {Type}");
+                    throw new Exception($"unsupported yet: {Type}: {this}");
             }
         }
     }

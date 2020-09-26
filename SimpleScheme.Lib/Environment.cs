@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace SimpleScheme.Lib
 {
@@ -109,6 +111,19 @@ namespace SimpleScheme.Lib
 
             return false;
         }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append('(');
+            foreach (var bind in _bindings)
+            {
+                sb.Append($"({bind.Name} . {bind.Value})");
+            }
+
+            sb.Append(')');
+            return sb.ToString();
+        }
     }
 
     public class Frame
@@ -122,7 +137,7 @@ namespace SimpleScheme.Lib
 
         public Frame(Bindings bindings)
         {
-            _bindings = new List<Bindings>(){bindings};
+            _bindings = new List<Bindings>() {bindings};
         }
 
         public void AddBindings(Bindings bindings)
@@ -153,9 +168,23 @@ namespace SimpleScheme.Lib
 
             return null;
         }
+
         public bool UpdateIfExists(string name, SchemeObject value)
         {
             return _bindings.Any(bindings => bindings.UpdateIfExists(name, value));
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append('(');
+            foreach (var binding in _bindings)
+            {
+                sb.Append($"  {binding}\n");
+            }
+
+            sb.Append(")\n");
+            return sb.ToString();
         }
     }
 
@@ -172,6 +201,16 @@ namespace SimpleScheme.Lib
             _environment = null;
         }
 
+        public void Dump()
+        {
+            Console.WriteLine("Frames");
+            for (var i = 0; i < Frames.Count; ++i)
+            {
+                Console.WriteLine($"Scope {i}");
+                Console.WriteLine(Frames[i]);
+            }
+        }
+
         public SchemeObject Intern(string name)
         {
             return _globalTable.Intern(name);
@@ -179,7 +218,7 @@ namespace SimpleScheme.Lib
 
         public Environment Copy()
         {
-            return new Environment(_globalTable) {Frames = new List<Frame>()};
+            return new Environment(_globalTable) {Frames = new List<Frame>(Frames)};
         }
 
         public void PushFrame(Frame frame)

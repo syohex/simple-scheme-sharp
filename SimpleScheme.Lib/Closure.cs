@@ -29,7 +29,8 @@ namespace SimpleScheme.Lib
                 bindings.AddBinding(_params[i].Value<Symbol>().Name, actualArgs[i]);
             }
 
-            env.PushFrame(new Frame(bindings));
+            Frame argFrame = new Frame(bindings);
+            env.PushFrame(argFrame);
             env.SetEnvironment(_environment);
 
             SchemeObject ret = SchemeObject.CreateUndefined();

@@ -323,5 +323,39 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalDefineFunction()
+        {
+            var interpreter = new Interpreter();
+            var inputs = new[]
+            {
+                "(define (add x y) (+ x y))",
+                "(define k ((lambda (x) x) \"bar\"))",
+                "(define c ((lambda (x) (lambda () x)) \"foo\"))"
+            };
+
+            foreach (var input in inputs)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                interpreter.Eval(expr);
+            }
+
+            var tests = new[]
+            {
+                ("(add 12 34)", SchemeObject.CreateFixnum(46)),
+                ("k", SchemeObject.CreateString("bar")),
+                ("(c)", SchemeObject.CreateString("foo")),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }

@@ -43,7 +43,7 @@ namespace SimpleScheme.Lib
         public static void SetupBuiltinSpecialForms(SymbolTable table)
         {
             InstallSpecialForm(table, "quote", Quote, 1, false);
-            InstallSpecialForm(table, "define", Define, 2, false);
+            InstallSpecialForm(table, "define", Define, 2, true);
             InstallSpecialForm(table, "set!", Set, 2, false);
             InstallSpecialForm(table, "if", If, 2, true);
             InstallSpecialForm(table, "lambda", Lambda, 1, true);
@@ -56,12 +56,41 @@ namespace SimpleScheme.Lib
 
         private static SchemeObject Define(Environment env, List<SchemeObject> args, SpecialForm self)
         {
-            if (args[0].Type != ObjectType.Symbol)
+            switch (args[0].Type)
             {
-                throw new SyntaxError("first argument of 'define' must be Symbol");
-            }
+                case ObjectType.Symbol:
+                    return env.Define(args[0], args[1].Eval(env));
+                case ObjectType.Pair:
+                {
+                    Pair p = args[0].Value<Pair>();
+                    if (p.Car.Type != ObjectType.Symbol || !p.Cdr.IsListType())
+                    {
+                        throw new SyntaxError($"Syntax Error: {args[0]}");
+                    }
 
-            return env.Define(args[0], args[1]);
+                    Symbol function = p.Car.Value<Symbol>();
+                    List<SchemeObject> dummyArgs;
+                    if (p.Cdr.Type == ObjectType.EmptyList)
+                    {
+                        dummyArgs = new List<SchemeObject>();
+                    }
+                    else
+                    {
+                        dummyArgs = p.Cdr.Value<Pair>().ToList();
+                    }
+
+                    var body = new List<SchemeObject>();
+                    for (var i = 1; i < args.Count; ++i)
+                    {
+                        body.Add(args[i]);
+                    }
+
+                    var closure = SchemeObject.CreateClosure(new Closure(function.Name, dummyArgs, body, env));
+                    return env.Define(p.Car, closure);
+                }
+                default:
+                    throw new SyntaxError("first argument of 'define' must be Symbol or Pair");
+            }
         }
 
         private static SchemeObject Set(Environment env, List<SchemeObject> args, SpecialForm self)
@@ -97,12 +126,21 @@ namespace SimpleScheme.Lib
 
         private static SchemeObject Lambda(Environment env, List<SchemeObject> args, SpecialForm self)
         {
-            if (args[0].Type != ObjectType.Pair)
+            if (!args[0].IsListType())
             {
                 throw new WrongTypeArgument(self, args[0]);
             }
 
-            var param = args[0].Value<Pair>().ToList();
+            List<SchemeObject> param;
+            if (args[0].Type == ObjectType.EmptyList)
+            {
+                param = new List<SchemeObject>();
+            }
+            else
+            {
+                param = args[0].Value<Pair>().ToList();
+            }
+
             var body = new List<SchemeObject>();
 
             for (var i = 1; i < args.Count; ++i)
