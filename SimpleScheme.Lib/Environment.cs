@@ -32,18 +32,98 @@ namespace SimpleScheme.Lib
         }
     }
 
-    public class Environment
+    internal class BindPair
     {
-        private readonly SymbolTable _globalTable;
+        public string Name { get; }
+        public SchemeObject Value { get; }
 
-        public Environment(SymbolTable table)
+        public BindPair(string name, SchemeObject value)
         {
-            _globalTable = table;
+            Name = name;
+            Value = value;
+        }
+    }
+
+    public class Frame
+    {
+        private List<BindPair> _bindings;
+
+        public Frame()
+        {
+            _bindings = new List<BindPair>();
+        }
+
+        public void AddBinding(string name, SchemeObject obj)
+        {
+            _bindings.Add(new BindPair(name, obj));
         }
 
         public SchemeObject? LookUp(string name)
         {
+            foreach (var binding in _bindings)
+            {
+                if (name == binding.Name)
+                {
+                    return binding.Value;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    public class Environment
+    {
+        private readonly SymbolTable _globalTable;
+        private List<Frame> _frames;
+
+        public Environment(SymbolTable table)
+        {
+            _globalTable = table;
+            _frames = new List<Frame>();
+        }
+
+        public void PushFrame(Frame frame)
+        {
+            _frames.Add(frame);
+        }
+
+        public void PopFrame(Frame frame)
+        {
+            _frames.RemoveAt(0);
+        }
+
+        public SchemeObject? LookUp(string name)
+        {
+            foreach (var frame in _frames)
+            {
+                var value = frame.LookUp(name);
+                if (value != null)
+                {
+                    return value;
+                }
+            }
+
             return _globalTable.LookUp(name);
+        }
+
+        public SchemeObject Define(SchemeObject symbol, SchemeObject value)
+        {
+            var sym = symbol.Value<Symbol>();
+            foreach (var frame in _frames)
+            {
+                var obj = frame.LookUp(sym.Name);
+                if (obj != null)
+                {
+                    var s = obj.Value<Symbol>();
+                    s.Value = value;
+                    return symbol;
+                }
+            }
+
+            sym.Value = value;
+            _globalTable.RegisterSymbol(symbol);
+            return symbol;
         }
     }
 }

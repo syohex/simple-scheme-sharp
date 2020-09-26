@@ -49,11 +49,22 @@ namespace SimpleScheme.Lib
         public static void SetupBuiltinSpecialForms(SymbolTable table)
         {
             InstallSpecialForm(table, "quote", Quote, 1, false);
+            InstallSpecialForm(table, "define", Define, 2, false);
         }
 
         private static SchemeObject Quote(Environment env, List<SchemeObject> args)
         {
             return args[0];
+        }
+
+        private static SchemeObject Define(Environment env, List<SchemeObject> args)
+        {
+            if (args[0].Type != ObjectType.Symbol)
+            {
+                throw new SyntaxError("first argument of 'define' must be Symbol");
+            }
+
+            return env.Define(args[0], args[1]);
         }
     }
 }

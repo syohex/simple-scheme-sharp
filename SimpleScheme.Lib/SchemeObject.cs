@@ -75,7 +75,7 @@ namespace SimpleScheme.Lib
     public class Symbol
     {
         public string Name { get; }
-        public SchemeObject Value { get; }
+        public SchemeObject Value { get; set; }
 
         public Symbol(string name, SchemeObject value)
         {
