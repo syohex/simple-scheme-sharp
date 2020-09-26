@@ -126,12 +126,10 @@ namespace SimpleScheme.Lib
     public class Symbol
     {
         public string Name { get; }
-        public SchemeObject Value { get; set; }
 
-        public Symbol(string name, SchemeObject value)
+        public Symbol(string name)
         {
             Name = name;
-            Value = value;
         }
     }
 
@@ -183,12 +181,7 @@ namespace SimpleScheme.Lib
 
         internal static SchemeObject CreateSymbol(string name)
         {
-            return CreateSymbol(name, CreateEmptyList());
-        }
-
-        internal static SchemeObject CreateSymbol(string name, SchemeObject value)
-        {
-            return new SchemeObject(ObjectType.Symbol, new Symbol(name, value));
+            return new SchemeObject(ObjectType.Symbol, new Symbol(name));
         }
 
         public static SchemeObject CreateSpecialForm(SpecialForm form)
@@ -199,6 +192,11 @@ namespace SimpleScheme.Lib
         public static SchemeObject CreateBuiltinFunction(BuiltinFunction func)
         {
             return new SchemeObject(ObjectType.BuiltinFunction, func);
+        }
+
+        public static SchemeObject CreateClosure(Closure closure)
+        {
+            return new SchemeObject(ObjectType.Closure, closure);
         }
 
         public static SchemeObject CreateUndefined()
@@ -267,6 +265,12 @@ namespace SimpleScheme.Lib
                     var func = Value<BuiltinFunction>();
                     return $"#<builtin {func.Name}>";
                 }
+                case ObjectType.Closure:
+                {
+                    var closure = Value<Closure>();
+                    var name = closure.Name ?? "#f";
+                    return $"#<closure {name}>";
+                }
                 case ObjectType.Undefined:
                     return "#<undef>";
                 default:
@@ -285,6 +289,18 @@ namespace SimpleScheme.Lib
                 case ObjectType.Character:
                 case ObjectType.EmptyList:
                 case ObjectType.Undefined:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public bool IsApplicable()
+        {
+            switch (Type)
+            {
+                case ObjectType.BuiltinFunction:
+                case ObjectType.Closure:
                     return true;
                 default:
                     return false;
@@ -318,33 +334,63 @@ namespace SimpleScheme.Lib
                 case ObjectType.Symbol:
                 {
                     var symbol = Value<Symbol>();
-                    var obj = env.LookUp(symbol.Name);
-                    if (obj == null)
+                    var value = env.LookUpValue(symbol.Name);
+                    if (value == null)
                     {
                         throw new UnboundedVariable(symbol);
                     }
 
-                    return obj.Value<Symbol>().Value;
+                    return value;
                 }
                 case ObjectType.Pair:
                 {
                     var pair = Value<Pair>();
-                    if (pair.Car.Type != ObjectType.Symbol)
+                    switch (pair.Car.Type)
                     {
-                        throw new Exception("unsupported error: " + pair.Car.Type);
+                        case ObjectType.Symbol:
+                        {
+                            var sym = pair.Car.Value<Symbol>();
+                            if (!(pair.Cdr.Type == ObjectType.Pair || pair.Cdr.Type == ObjectType.EmptyList))
+                            {
+                                throw new SyntaxError("malformed function call");
+                            }
+
+                            var application = env.LookUpValue(sym.Name);
+                            if (application == null)
+                            {
+                                throw new SyntaxError($"{application} is not an application");
+                            }
+
+                            return application.Apply(env, pair.Cdr);
+                        }
+                        case ObjectType.Pair:
+                        {
+                            var firstArg = pair.Car.Value<Pair>();
+                            if (firstArg.Car.Type != ObjectType.Symbol)
+                            {
+                                throw new SyntaxError($"invalid application {firstArg}");
+                            }
+
+                            var sym = firstArg.Car.Value<Symbol>();
+                            if (sym.Name != "lambda")
+                            {
+                                throw new SyntaxError($"invalid application {firstArg}");
+                            }
+
+                            var closure = pair.Car.Eval(env);
+                            if (closure.Type != ObjectType.Closure)
+                            {
+                                throw new InternalException("evaluated value of lambda is not closure");
+                            }
+
+                            return closure.Apply(env, pair.Cdr);
+                        }
+                        default:
+                            throw new SyntaxError($"cannot evaluated: {this}");
                     }
-
-                    var sym = pair.Car.Value<Symbol>();
-
-                    if (!(pair.Cdr.Type == ObjectType.Pair || pair.Cdr.Type == ObjectType.EmptyList))
-                    {
-                        throw new SyntaxError("malformed function call");
-                    }
-
-                    return sym.Value.Apply(env, pair.Cdr);
                 }
                 default:
-                    throw new Exception($"unsupported yet: {Type}");
+                    throw new SyntaxError($"cannot evaluated: {this}");
             }
         }
 
@@ -374,15 +420,21 @@ namespace SimpleScheme.Lib
             {
                 case ObjectType.SpecialForm:
                 {
-                    SpecialForm form = Value<SpecialForm>();
+                    var form = Value<SpecialForm>();
                     var unEvaluatedArgs = args.Value<Pair>().ToList();
                     return form.Apply(env, unEvaluatedArgs);
                 }
                 case ObjectType.BuiltinFunction:
                 {
-                    BuiltinFunction func = Value<BuiltinFunction>();
+                    var func = Value<BuiltinFunction>();
                     List<SchemeObject> evaluatedArgs = EvalArguments(env, args);
                     return func.Apply(env, evaluatedArgs);
+                }
+                case ObjectType.Closure:
+                {
+                    var closure = Value<Closure>();
+                    List<SchemeObject> evaluatedArgs = EvalArguments(env, args);
+                    return closure.Apply(env, evaluatedArgs);
                 }
                 default:
                     throw new Exception($"unsupported yet: {Type}");

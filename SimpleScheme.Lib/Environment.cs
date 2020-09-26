@@ -5,43 +5,54 @@ namespace SimpleScheme.Lib
 {
     public class SymbolTable
     {
-        private readonly Dictionary<string, SchemeObject> _table;
+        private readonly Dictionary<SchemeObject, SchemeObject> _table;
 
         public SymbolTable()
         {
-            _table = new Dictionary<string, SchemeObject>();
+            _table = new Dictionary<SchemeObject, SchemeObject>();
         }
 
-        public SchemeObject? LookUp(string name)
+        public SchemeObject? LookUpSymbol(string name)
         {
-            if (_table.TryGetValue(name, out SchemeObject symbol))
+            foreach (KeyValuePair<SchemeObject, SchemeObject> entry in _table)
             {
-                return symbol;
+                if (entry.Key.Value<Symbol>().Name == name)
+                {
+                    return entry.Key;
+                }
             }
 
             return null;
         }
 
-        public void RegisterSymbol(SchemeObject symbol)
+        public SchemeObject? LookUpValue(string name)
         {
-            if (symbol.Type != ObjectType.Symbol)
+            foreach (KeyValuePair<SchemeObject, SchemeObject> entry in _table)
             {
-                throw new UnsupportedDataType("passed not symbol type argument");
+                if (entry.Key.Value<Symbol>().Name == name)
+                {
+                    return entry.Value;
+                }
             }
 
-            _table[symbol.Value<Symbol>().Name] = symbol;
+            return null;
+        }
+
+        public void RegisterValue(SchemeObject name, SchemeObject value)
+        {
+            _table[name] = value;
         }
 
         public SchemeObject Intern(string name)
         {
-            SchemeObject? obj = LookUp(name);
+            SchemeObject? obj = LookUpSymbol(name);
             if (obj != null)
             {
                 return obj;
             }
 
             SchemeObject sym = SchemeObject.CreateSymbol(name);
-            RegisterSymbol(sym);
+            RegisterValue(sym, SchemeObject.CreateUndefined());
             return sym;
         }
     }
@@ -49,7 +60,7 @@ namespace SimpleScheme.Lib
     internal class BindPair
     {
         public string Name { get; }
-        public SchemeObject Value { get; }
+        public SchemeObject Value { get; set; }
 
         public BindPair(string name, SchemeObject value)
         {
@@ -58,11 +69,11 @@ namespace SimpleScheme.Lib
         }
     }
 
-    public class Frame
+    public class Bindings
     {
         private List<BindPair> _bindings;
 
-        public Frame()
+        public Bindings()
         {
             _bindings = new List<BindPair>();
         }
@@ -72,9 +83,9 @@ namespace SimpleScheme.Lib
             _bindings.Add(new BindPair(name, obj));
         }
 
-        public SchemeObject? LookUp(string name)
+        public SchemeObject? Lookup(string name)
         {
-            foreach (var binding in _bindings)
+            foreach (BindPair binding in _bindings)
             {
                 if (name == binding.Name)
                 {
@@ -84,17 +95,81 @@ namespace SimpleScheme.Lib
 
             return null;
         }
+
+        public bool UpdateIfExists(string name, SchemeObject value)
+        {
+            foreach (BindPair binding in _bindings)
+            {
+                if (name == binding.Name)
+                {
+                    binding.Value = value;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public class Frame
+    {
+        private readonly List<Bindings> _bindings;
+
+        public Frame()
+        {
+            _bindings = new List<Bindings>();
+        }
+
+        public Frame(Bindings bindings)
+        {
+            _bindings = new List<Bindings>(){bindings};
+        }
+
+        public void AddBindings(Bindings bindings)
+        {
+            _bindings.Add(bindings);
+        }
+
+        public void AddNewBinding(string name, SchemeObject value)
+        {
+            if (_bindings.Count == 0)
+            {
+                throw new InternalException("no bindings");
+            }
+
+            _bindings.First().AddBinding(name, value);
+        }
+
+        public SchemeObject? LookUpValue(string name)
+        {
+            foreach (var bindings in _bindings)
+            {
+                var value = bindings.Lookup(name);
+                if (value != null)
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+        public bool UpdateIfExists(string name, SchemeObject value)
+        {
+            return _bindings.Any(bindings => bindings.UpdateIfExists(name, value));
+        }
     }
 
     public class Environment
     {
         private readonly SymbolTable _globalTable;
-        private readonly List<Frame> _frames;
+        private List<Frame> Frames { get; set; }
+        private Environment? _environment;
 
         public Environment(SymbolTable table)
         {
             _globalTable = table;
-            _frames = new List<Frame>();
+            Frames = new List<Frame>();
+            _environment = null;
         }
 
         public SchemeObject Intern(string name)
@@ -102,66 +177,93 @@ namespace SimpleScheme.Lib
             return _globalTable.Intern(name);
         }
 
+        public Environment Copy()
+        {
+            return new Environment(_globalTable) {Frames = new List<Frame>()};
+        }
+
         public void PushFrame(Frame frame)
         {
-            _frames.Add(frame);
+            Frames.Insert(0, frame);
         }
 
-        public void PopFrame(Frame frame)
+        public void PopFrame()
         {
-            _frames.RemoveAt(0);
+            Frames.RemoveAt(0);
         }
 
-        public SchemeObject? LookUp(string name)
+        public void SetEnvironment(Environment otherEnv)
         {
-            foreach (var frame in _frames)
+            _environment = otherEnv;
+        }
+
+        public void ResetEnvironment()
+        {
+            _environment = null;
+        }
+
+        private SchemeObject? LookUpValueFromFrames(string name)
+        {
+            foreach (var frame in Frames)
             {
-                var value = frame.LookUp(name);
+                var value = frame.LookUpValue(name);
                 if (value != null)
                 {
                     return value;
                 }
             }
 
-            return _globalTable.LookUp(name);
+            return null;
+        }
+
+        public SchemeObject? LookUpValue(string name)
+        {
+            var obj = LookUpValueFromFrames(name);
+            if (obj != null)
+            {
+                return obj;
+            }
+
+            if (_environment != null)
+            {
+                obj = _environment.LookUpValueFromFrames(name);
+                if (obj != null)
+                {
+                    return obj;
+                }
+            }
+
+            return _globalTable.LookUpValue(name);
         }
 
         public SchemeObject Define(SchemeObject symbol, SchemeObject value)
         {
             var sym = symbol.Value<Symbol>();
-            if (_frames.Count == 0) // define as global variable
+            if (Frames.Count == 0) // define as global variable
             {
-                sym.Value = value;
-                _globalTable.RegisterSymbol(symbol);
+                _globalTable.RegisterValue(symbol, value);
                 return symbol;
             }
 
             // define as local variable
-            _frames.First().AddBinding(sym.Name, value);
+            Frames.First().AddNewBinding(sym.Name, value);
             return symbol;
         }
 
         public SchemeObject Set(SchemeObject symbol, SchemeObject value)
         {
             var sym = symbol.Value<Symbol>();
-            foreach (var frame in _frames)
+            if (Frames.Any(frame => frame.UpdateIfExists(sym.Name, value)))
             {
-                var obj = frame.LookUp(sym.Name);
-                if (obj != null)
-                {
-                    var s = obj.Value<Symbol>();
-                    s.Value = value;
-                    return value;
-                }
+                return value;
             }
 
-            var globalObj = _globalTable.LookUp(sym.Name);
-            if (globalObj == null)
+            if (_globalTable.LookUpSymbol(sym.Name) == null)
             {
                 throw new SymbolNotDefined(sym.Name);
             }
 
-            globalObj.Value<Symbol>().Value = value;
+            _globalTable.RegisterValue(symbol, value);
             return value;
         }
     }

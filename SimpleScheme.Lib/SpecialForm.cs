@@ -37,7 +37,7 @@ namespace SimpleScheme.Lib
             bool variadic)
         {
             var form = SchemeObject.CreateSpecialForm(new SpecialForm(name, code, arity, variadic));
-            table.RegisterSymbol(SchemeObject.CreateSymbol(name, form));
+            table.RegisterValue(table.Intern(name), form);
         }
 
         public static void SetupBuiltinSpecialForms(SymbolTable table)
@@ -46,6 +46,7 @@ namespace SimpleScheme.Lib
             InstallSpecialForm(table, "define", Define, 2, false);
             InstallSpecialForm(table, "set!", Set, 2, false);
             InstallSpecialForm(table, "if", If, 2, true);
+            InstallSpecialForm(table, "lambda", Lambda, 1, true);
         }
 
         private static SchemeObject Quote(Environment env, List<SchemeObject> args, SpecialForm self)
@@ -92,6 +93,24 @@ namespace SimpleScheme.Lib
             }
 
             return args[2].Eval(env);
+        }
+
+        private static SchemeObject Lambda(Environment env, List<SchemeObject> args, SpecialForm self)
+        {
+            if (args[0].Type != ObjectType.Pair)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            var param = args[0].Value<Pair>().ToList();
+            var body = new List<SchemeObject>();
+
+            for (var i = 1; i < args.Count; ++i)
+            {
+                body.Add(args[i]);
+            }
+
+            return SchemeObject.CreateClosure(new Closure(null, param, body, env));
         }
     }
 }

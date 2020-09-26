@@ -39,8 +39,8 @@ namespace SimpleScheme.Lib
         private static void InstallBuiltinFunction(SymbolTable table, string name, BuiltinFunctionCode code, int arity,
             bool variadic)
         {
-            var form = SchemeObject.CreateBuiltinFunction(new BuiltinFunction(name, code, arity, variadic));
-            table.RegisterSymbol(SchemeObject.CreateSymbol(name, form));
+            var func = SchemeObject.CreateBuiltinFunction(new BuiltinFunction(name, code, arity, variadic));
+            table.RegisterValue(table.Intern(name), func);
         }
 
         public static void SetupBuiltinFunction(SymbolTable table)
@@ -123,8 +123,7 @@ namespace SimpleScheme.Lib
 
         private static SchemeObject IsProcedure(Environment env, List<SchemeObject> args, BuiltinFunction self)
         {
-            var types = new List<ObjectType> {ObjectType.BuiltinFunction, ObjectType.Closure};
-            return SchemeObject.CreateBoolean(types.Contains(args[0].Type));
+            return SchemeObject.CreateBoolean(args[0].IsApplicable());
         }
 
         private static SchemeObject CharToInteger(Environment env, List<SchemeObject> args, BuiltinFunction self)

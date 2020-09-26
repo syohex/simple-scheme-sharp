@@ -305,5 +305,23 @@ namespace SimpleScheme.Test
             Assert.True(val.Cdr.Value<Pair>().Car.Equal(SchemeObject.CreateFixnum(3)));
             Assert.True(val.Cdr.Value<Pair>().Cdr.Value<Pair>().Car.Equal(SchemeObject.CreateFloat(4.5)));
         }
+
+        [Fact]
+        public void EvalLambda()
+        {
+            var tests = new[]
+            {
+                ("((lambda (a b) (+ a b)) 10 20)", SchemeObject.CreateFixnum(30)),
+            };
+
+            var interpreter = new Interpreter();
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }
