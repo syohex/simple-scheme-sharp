@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using SimpleScheme.Lib;
 using Xunit;
@@ -178,6 +179,50 @@ namespace SimpleScheme.Test
                 var got = interpreter.Eval(expr);
                 Assert.Equal(got.Value<bool>(), expected);
             }
+        }
+
+        [Fact]
+        public void EvalValueConversion()
+        {
+            var interpreter = new Interpreter();
+            var tests = new[]
+            {
+                ("(char->integer #\\a)", SchemeObject.CreateFixnum(97)),
+                ("(char->integer #\\A)", SchemeObject.CreateFixnum(65)),
+                ("(integer->char 97)", SchemeObject.CreateCharacter('a')),
+                ("(integer->char 65)", SchemeObject.CreateCharacter('A')),
+                ("(number->string 123)", SchemeObject.CreateString("123")),
+                ("(number->string 123.5)", SchemeObject.CreateString("123.5")),
+                ("(string->number \"42\")", SchemeObject.CreateFixnum(42)),
+                ("(string->number \"34.5\")", SchemeObject.CreateFloat(34.5)),
+                ("(symbol->string 'foo)", SchemeObject.CreateString("foo")),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+
+            var inputs = new[]
+            {
+                "(string->symbol \"hello\")",
+                "(string->symbol \"hello\")",
+                "(string->symbol \"helloWorld\")",
+            };
+
+            var ret = new List<SchemeObject>();
+            foreach (var input in inputs)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                ret.Add(interpreter.Eval(expr));
+            }
+
+            Assert.True(ret[0].Equal(ret[1]));
+            Assert.False(ret[0].Equal(ret[2]));
         }
 
         [Fact]

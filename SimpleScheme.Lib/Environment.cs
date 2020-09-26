@@ -31,6 +31,19 @@ namespace SimpleScheme.Lib
 
             _table[symbol.Value<Symbol>().Name] = symbol;
         }
+
+        public SchemeObject Intern(string name)
+        {
+            SchemeObject? obj = LookUp(name);
+            if (obj != null)
+            {
+                return obj;
+            }
+
+            SchemeObject sym = SchemeObject.CreateSymbol(name);
+            RegisterSymbol(sym);
+            return sym;
+        }
     }
 
     internal class BindPair
@@ -76,12 +89,17 @@ namespace SimpleScheme.Lib
     public class Environment
     {
         private readonly SymbolTable _globalTable;
-        private List<Frame> _frames;
+        private readonly List<Frame> _frames;
 
         public Environment(SymbolTable table)
         {
             _globalTable = table;
             _frames = new List<Frame>();
+        }
+
+        public SchemeObject Intern(string name)
+        {
+            return _globalTable.Intern(name);
         }
 
         public void PushFrame(Frame frame)

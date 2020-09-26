@@ -266,15 +266,7 @@ namespace SimpleScheme.Lib
 
         public SchemeObject Intern(string name)
         {
-            SchemeObject? obj = _globalSymbolTable.LookUp(name);
-            if (obj != null)
-            {
-                return obj;
-            }
-
-            SchemeObject sym = SchemeObject.CreateSymbol(name);
-            _globalSymbolTable.RegisterSymbol(sym);
-            return sym;
+            return _globalSymbolTable.Intern(name);
         }
 
         private SchemeObject ReadSymbol(Reader r, int c)
