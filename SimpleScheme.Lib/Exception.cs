@@ -61,11 +61,11 @@ namespace SimpleScheme.Lib
 
     public class WrongTypeArgument : Exception
     {
-        public WrongTypeArgument(BuiltinFunction func, SchemeObject arg) : base(ExceptionMessage(func, arg))
+        public WrongTypeArgument(Callable func, SchemeObject arg) : base(ExceptionMessage(func, arg))
         {
         }
 
-        private static string ExceptionMessage(BuiltinFunction func, SchemeObject arg)
+        private static string ExceptionMessage(Callable func, SchemeObject arg)
         {
             return $"function {func.Name} does not support {arg.Type} argument type";
         }

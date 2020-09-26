@@ -70,6 +70,15 @@ namespace SimpleScheme.Lib
             InstallBuiltinFunction(table, "*", Multiply, 0, true);
             InstallBuiltinFunction(table, "/", Divide, 1, true);
             InstallBuiltinFunction(table, "mod", Modulo, 2, false);
+
+            // pair operator
+            InstallBuiltinFunction(table, "cons", Cons, 2, false);
+            InstallBuiltinFunction(table, "car", Car, 1, false);
+            InstallBuiltinFunction(table, "cdr", Cdr, 1, false);
+            InstallBuiltinFunction(table, "set-car!", SetCar, 2, false);
+            InstallBuiltinFunction(table, "set-cdr!", SetCdr, 2, false);
+            InstallBuiltinFunction(table, "list", List, 0, true);
+            InstallBuiltinFunction(table, "nth", Nth, 2, false);
         }
 
         private static SchemeObject IsNull(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -304,6 +313,105 @@ namespace SimpleScheme.Lib
 
             double ret = val1 % val2;
             return hasFloat1 || hasFloat2 ? SchemeObject.CreateFloat(ret) : SchemeObject.CreateFixnum((long) ret);
+        }
+
+        private static SchemeObject Cons(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            return SchemeObject.CreatePair(args[0], args[1]);
+        }
+
+        private static SchemeObject Car(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.Pair)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            return args[0].Value<Pair>().Car;
+        }
+
+        private static SchemeObject Cdr(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.Pair)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            return args[0].Value<Pair>().Cdr;
+        }
+
+        private static SchemeObject SetCar(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.Pair)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            var pair = args[0].Value<Pair>();
+            pair.Car = args[1];
+            return SchemeObject.CreateUndefined();
+        }
+
+        private static SchemeObject SetCdr(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.Pair)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            Pair pair = args[0].Value<Pair>();
+            pair.Cdr = args[1];
+            return SchemeObject.CreateUndefined();
+        }
+
+        private static SchemeObject List(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var emptyList = SchemeObject.CreateEmptyList();
+            if (args.Count == 0)
+            {
+                return emptyList;
+            }
+
+            SchemeObject ret = SchemeObject.CreatePair(emptyList, emptyList);
+            SchemeObject iter = ret;
+            foreach (var arg in args)
+            {
+                var p = iter.Value<Pair>();
+                p.Car = arg;
+                p.Cdr = SchemeObject.CreatePair(emptyList, emptyList);
+
+                iter = p.Cdr;
+            }
+
+            iter.Value<Pair>().Cdr = emptyList;
+            return ret;
+        }
+
+        private static SchemeObject Nth(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.Fixnum)
+            {
+                throw new WrongTypeArgument(self, args[1]);
+            }
+
+            if (args[1].Type != ObjectType.Pair)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            long index = args[0].Value<long>();
+            if (index < 0)
+            {
+                throw new RuntimeException("index must be larger than equal 0");
+            }
+
+            var pair = args[1].Value<Pair>();
+            if (index >= pair.Length())
+            {
+                throw new RuntimeException("index must be smaller than length");
+            }
+
+            return pair.Nth(index);
         }
     }
 }

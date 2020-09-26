@@ -22,13 +22,61 @@ namespace SimpleScheme.Lib
 
     public class Pair
     {
-        public SchemeObject Car { get; }
-        public SchemeObject Cdr { get; }
+        public SchemeObject Car { get; set; }
+        public SchemeObject Cdr { get; set; }
 
         public Pair(SchemeObject car, SchemeObject cdr)
         {
             Car = car;
             Cdr = cdr;
+        }
+
+        public int Length()
+        {
+            var next = this;
+            int len = 0;
+            while (true)
+            {
+                if (next.Cdr.Type == ObjectType.EmptyList)
+                {
+                    return len;
+                }
+
+                ++len;
+
+                if (next.Cdr.Type != ObjectType.Pair)
+                {
+                    throw new InternalException("dotted pair cannot convert into listed");
+                }
+
+                next = next.Cdr.Value<Pair>();
+            }
+        }
+
+        public SchemeObject Nth(long index)
+        {
+            var next = this;
+            int len = 0;
+            while (true)
+            {
+                if (next.Cdr.Type == ObjectType.EmptyList)
+                {
+                    throw new RuntimeException("passed value larger than list length");
+                }
+
+                if (len == index)
+                {
+                    return next.Car;
+                }
+
+                ++len;
+                if (next.Cdr.Type != ObjectType.Pair)
+                {
+                    throw new InternalException("dotted pair cannot convert into listed");
+                }
+
+                next = next.Cdr.Value<Pair>();
+            }
         }
 
         public List<SchemeObject> ToList()

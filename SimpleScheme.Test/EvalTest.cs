@@ -253,5 +253,57 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalPairOperators()
+        {
+            var interpreter = new Interpreter();
+            {
+                using var reader = new StringReader("(cons 1 '(\"foo\"))");
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                var pair = got.Value<Pair>();
+                Assert.True(pair.Car.Equal(SchemeObject.CreateFixnum(1)));
+                Assert.True(pair.Cdr.Value<Pair>().Car.Equal(SchemeObject.CreateString("foo")));
+                Assert.True(pair.Cdr.Value<Pair>().Cdr.Equal(SchemeObject.CreateEmptyList()));
+            }
+
+            var tests = new[]
+            {
+                ("(car '(1 2 3 4))", SchemeObject.CreateFixnum(1)),
+                ("(cdr '(1 . #f))", SchemeObject.CreateBoolean(false)),
+                ("(nth 0 (list 42 #f))", SchemeObject.CreateFixnum(42)),
+                ("(nth 1 (list 99 \"foo\"))", SchemeObject.CreateString("foo")),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+
+            var inputs = new[]
+            {
+                "(define foo '(1 2))",
+                "(set-car! foo \"hello world\")",
+                "(set-cdr! foo '(3 4.5))",
+                "foo"
+            };
+
+            SchemeObject ret = SchemeObject.CreateUndefined();
+            foreach (var input in inputs)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                ret = interpreter.Eval(expr);
+            }
+
+            Pair val = ret.Value<Pair>();
+            Assert.True(val.Car.Equal(SchemeObject.CreateString("hello world")));
+            Assert.True(val.Cdr.Value<Pair>().Car.Equal(SchemeObject.CreateFixnum(3)));
+            Assert.True(val.Cdr.Value<Pair>().Cdr.Value<Pair>().Car.Equal(SchemeObject.CreateFloat(4.5)));
+        }
     }
 }
