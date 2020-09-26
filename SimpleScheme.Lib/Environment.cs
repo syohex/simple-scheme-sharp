@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SimpleScheme.Lib
 {
@@ -110,6 +111,21 @@ namespace SimpleScheme.Lib
         public SchemeObject Define(SchemeObject symbol, SchemeObject value)
         {
             var sym = symbol.Value<Symbol>();
+            if (_frames.Count == 0) // define as global variable
+            {
+                sym.Value = value;
+                _globalTable.RegisterSymbol(symbol);
+                return symbol;
+            }
+
+            // define as local variable
+            _frames.First().AddBinding(sym.Name, value);
+            return symbol;
+        }
+
+        public SchemeObject Set(SchemeObject symbol, SchemeObject value)
+        {
+            var sym = symbol.Value<Symbol>();
             foreach (var frame in _frames)
             {
                 var obj = frame.LookUp(sym.Name);
@@ -117,13 +133,18 @@ namespace SimpleScheme.Lib
                 {
                     var s = obj.Value<Symbol>();
                     s.Value = value;
-                    return symbol;
+                    return value;
                 }
             }
 
-            sym.Value = value;
-            _globalTable.RegisterSymbol(symbol);
-            return symbol;
+            var globalObj = _globalTable.LookUp(sym.Name);
+            if (globalObj == null)
+            {
+                throw new SymbolNotDefined(sym.Name);
+            }
+
+            globalObj.Value<Symbol>().Value = value;
+            return value;
         }
     }
 }

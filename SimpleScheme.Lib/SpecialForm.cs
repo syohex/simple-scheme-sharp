@@ -50,6 +50,7 @@ namespace SimpleScheme.Lib
         {
             InstallSpecialForm(table, "quote", Quote, 1, false);
             InstallSpecialForm(table, "define", Define, 2, false);
+            InstallSpecialForm(table, "set!", Set, 2, false);
         }
 
         private static SchemeObject Quote(Environment env, List<SchemeObject> args)
@@ -65,6 +66,16 @@ namespace SimpleScheme.Lib
             }
 
             return env.Define(args[0], args[1]);
+        }
+
+        private static SchemeObject Set(Environment env, List<SchemeObject> args)
+        {
+            if (args[0].Type != ObjectType.Symbol)
+            {
+                throw new SyntaxError("first argument of 'set' must be Symbol");
+            }
+
+            return env.Set(args[0], args[1]);
         }
     }
 }

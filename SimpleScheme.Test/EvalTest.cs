@@ -78,5 +78,39 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalSet()
+        {
+            var interpreter = new Interpreter();
+            var inputs = new[]
+            {
+                "(define foo 42)",
+                "(define bar \"hello\")",
+                "(set! foo 99)",
+                "(define bar #t)"
+            };
+
+            foreach (var input in inputs)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                interpreter.Eval(expr);
+            }
+
+            var tests = new[]
+            {
+                ("foo", SchemeObject.CreateFixnum(99)),
+                ("bar", SchemeObject.CreateBoolean(true)),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }

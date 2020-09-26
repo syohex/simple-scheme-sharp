@@ -51,4 +51,11 @@ namespace SimpleScheme.Lib
             return $"unbound variable: {symbol.Name}";
         }
     }
+
+    public class SymbolNotDefined : Exception
+    {
+        public SymbolNotDefined(string name) : base($"symbol '{name}' is not defined")
+        {
+        }
+    }
 }
