@@ -14,7 +14,8 @@ namespace SimpleScheme.Lib
         EmptyList,
         Pair,
         Symbol,
-        SpecialForm
+        SpecialForm,
+        Undefined
     }
 
     public class Pair
@@ -145,6 +146,11 @@ namespace SimpleScheme.Lib
             return new SchemeObject(ObjectType.SpecialForm, form);
         }
 
+        public static SchemeObject CreateUndefined()
+        {
+            return new SchemeObject(ObjectType.Undefined, -1); // dummy value
+        }
+
         public T Value<T>()
         {
             return (T) _value;
@@ -164,11 +170,13 @@ namespace SimpleScheme.Lib
                     return Value<char>() == obj.Value<char>();
                 case ObjectType.Boolean:
                     return Value<bool>() == obj.Value<bool>();
-                case ObjectType.EmptyList:
                 case ObjectType.Symbol:
                     return this == obj;
+                case ObjectType.EmptyList:
+                case ObjectType.Undefined:
+                    return Type == obj.Type;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new InternalException($"type '{Type}' is not comparable");
             }
         }
 
@@ -197,6 +205,8 @@ namespace SimpleScheme.Lib
                     var form = Value<SpecialForm>();
                     return $"#<special {form.Name}>";
                 }
+                case ObjectType.Undefined:
+                    return "#<undef>";
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -211,10 +221,26 @@ namespace SimpleScheme.Lib
                 case ObjectType.String:
                 case ObjectType.Boolean:
                 case ObjectType.Character:
+                case ObjectType.Undefined:
                     return true;
                 default:
                     return false;
             }
+        }
+
+        public bool IsTrue()
+        {
+            if (Type != ObjectType.Boolean)
+            {
+                return true;
+            }
+
+            return Value<bool>();
+        }
+
+        public bool IsUndefined()
+        {
+            return Type == ObjectType.Undefined;
         }
 
         public SchemeObject Eval(Environment env)

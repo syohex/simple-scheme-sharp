@@ -112,5 +112,32 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalIf()
+        {
+            var interpreter = new Interpreter();
+            var tests = new[]
+            {
+                ("(if #t 1 2)", SchemeObject.CreateFixnum(1)),
+                ("(if #f 1 2)", SchemeObject.CreateFixnum(2)),
+                ("(if 10 \"foo\")", SchemeObject.CreateString("foo"))
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+
+            {
+                using var reader = new StringReader("(if #f 10)");
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.IsUndefined());
+            }
+        }
     }
 }
