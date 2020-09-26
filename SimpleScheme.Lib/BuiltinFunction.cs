@@ -79,6 +79,9 @@ namespace SimpleScheme.Lib
             InstallBuiltinFunction(table, "set-cdr!", SetCdr, 2, false);
             InstallBuiltinFunction(table, "list", List, 0, true);
             InstallBuiltinFunction(table, "nth", Nth, 2, false);
+
+            // compare
+            InstallBuiltinFunction(table, "eq?", Eq, 2, false);
         }
 
         private static SchemeObject IsNull(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -411,6 +414,27 @@ namespace SimpleScheme.Lib
             }
 
             return pair.Nth(index);
+        }
+
+        private static SchemeObject Eq(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != args[1].Type)
+            {
+                return SchemeObject.CreateBoolean(false);
+            }
+
+            switch (args[0].Type)
+            {
+                case ObjectType.Symbol:
+                    return SchemeObject.CreateBoolean(args[0].Value<bool>() == args[1].Value<bool>());
+                case ObjectType.Boolean:
+                    return SchemeObject.CreateBoolean(args[0].Value<bool>() == args[1].Value<bool>());
+                case ObjectType.EmptyList:
+                case ObjectType.Undefined:
+                    return SchemeObject.CreateBoolean(true);
+                default:
+                    return SchemeObject.CreateBoolean(args[0] == args[1]);
+            }
         }
     }
 }

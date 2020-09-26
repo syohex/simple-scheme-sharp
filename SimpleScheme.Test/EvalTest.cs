@@ -307,6 +307,26 @@ namespace SimpleScheme.Test
         }
 
         [Fact]
+        public void EvalComparison()
+        {
+            var tests = new[]
+            {
+                ("(eq? #t #t)", true),
+                ("(eq? #t #f)", false),
+                ("(eq? () ())", true),
+            };
+
+            var interpreter = new Interpreter();
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.Equal(got.Value<bool>(), expected);
+            }
+        }
+
+        [Fact]
         public void EvalLambda()
         {
             var tests = new[]
