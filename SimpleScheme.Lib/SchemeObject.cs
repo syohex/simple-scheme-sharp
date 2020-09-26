@@ -16,7 +16,8 @@ namespace SimpleScheme.Lib
         Symbol,
         Undefined,
         SpecialForm,
-        BuiltinFunction
+        BuiltinFunction,
+        Closure
     }
 
     public class Pair
@@ -234,6 +235,7 @@ namespace SimpleScheme.Lib
                 case ObjectType.String:
                 case ObjectType.Boolean:
                 case ObjectType.Character:
+                case ObjectType.EmptyList:
                 case ObjectType.Undefined:
                     return true;
                 default:

@@ -141,6 +141,46 @@ namespace SimpleScheme.Test
         }
 
         [Fact]
+        public void EvalTypePredicate()
+        {
+            var interpreter = new Interpreter();
+            var tests = new[]
+            {
+                ("(null? ())", true),
+                ("(null? 32)", false),
+                ("(null? #t)", false),
+                ("(boolean? #t)", true),
+                ("(boolean? #f)", true),
+                ("(boolean? 10)", false),
+                ("(symbol? 'foo)", true),
+                ("(symbol? 42)", false),
+                ("(integer? 42)", true),
+                ("(integer? 123.5)", false),
+                ("(integer? \"foo\")", false),
+                ("(float? 123.25)", true),
+                ("(float? #\\c)", false),
+                ("(char? #\\c)", true),
+                ("(char? #f)", false),
+                ("(string? \"foo bar\")", true),
+                ("(string? #\\newline)", false),
+                ("(pair? '(1 2 3))", true),
+                ("(pair? ())", false),
+                ("(pair? 42)", false),
+                ("(procedure? +)", true),
+                ("(procedure? procedure?)", true),
+                ("(procedure? quote)", false),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.Equal(got.Value<bool>(), expected);
+            }
+        }
+
+        [Fact]
         public void EvalArithmeticOperator()
         {
             var interpreter = new Interpreter();
