@@ -2,21 +2,15 @@ using System.Collections.Generic;
 
 namespace SimpleScheme.Lib
 {
-    public class SpecialForm
+    public class SpecialForm : Callable
     {
         private delegate SchemeObject SpecialFormCode(Environment env, List<SchemeObject> args, SpecialForm self);
 
-        public string? Name { get; }
         private readonly SpecialFormCode _code;
-        public int Arity { get; }
-        public bool Variadic { get; }
 
-        private SpecialForm(string? name, SpecialFormCode code, int arity, bool variadic)
+        private SpecialForm(string? name, SpecialFormCode code, int arity, bool variadic) : base(name, arity, variadic)
         {
-            Name = name;
             _code = code;
-            Arity = arity;
-            Variadic = variadic;
         }
 
         public SchemeObject Apply(Environment env, List<SchemeObject> args)

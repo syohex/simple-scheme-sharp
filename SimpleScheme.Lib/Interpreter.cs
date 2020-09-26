@@ -21,6 +21,7 @@ namespace SimpleScheme.Lib
             _globalSymbolTable = new SymbolTable();
 
             SpecialForm.SetupBuiltinSpecialForms(_globalSymbolTable);
+            BuiltinFunction.SetupBuiltinFunction(_globalSymbolTable);
         }
 
         private bool IsAlphabetic(int c)

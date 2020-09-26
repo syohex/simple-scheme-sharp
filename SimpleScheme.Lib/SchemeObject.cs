@@ -14,8 +14,9 @@ namespace SimpleScheme.Lib
         EmptyList,
         Pair,
         Symbol,
+        Undefined,
         SpecialForm,
-        Undefined
+        BuiltinFunction
     }
 
     public class Pair
@@ -146,6 +147,11 @@ namespace SimpleScheme.Lib
             return new SchemeObject(ObjectType.SpecialForm, form);
         }
 
+        public static SchemeObject CreateBuiltinFunction(BuiltinFunction func)
+        {
+            return new SchemeObject(ObjectType.BuiltinFunction, func);
+        }
+
         public static SchemeObject CreateUndefined()
         {
             return new SchemeObject(ObjectType.Undefined, -1); // dummy value
@@ -174,6 +180,8 @@ namespace SimpleScheme.Lib
                     return this == obj;
                 case ObjectType.EmptyList:
                 case ObjectType.Undefined:
+                case ObjectType.SpecialForm:
+                case ObjectType.BuiltinFunction:
                     return Type == obj.Type;
                 default:
                     throw new InternalException($"type '{Type}' is not comparable");
@@ -204,6 +212,11 @@ namespace SimpleScheme.Lib
                 {
                     var form = Value<SpecialForm>();
                     return $"#<special {form.Name}>";
+                }
+                case ObjectType.BuiltinFunction:
+                {
+                    var func = Value<BuiltinFunction>();
+                    return $"#<builtin {func.Name}>";
                 }
                 case ObjectType.Undefined:
                     return "#<undef>";
@@ -273,7 +286,7 @@ namespace SimpleScheme.Lib
 
                     var sym = pair.Car.Value<Symbol>();
 
-                    if (pair.Cdr.Type != ObjectType.Pair)
+                    if (!(pair.Cdr.Type == ObjectType.Pair || pair.Cdr.Type == ObjectType.EmptyList))
                     {
                         throw new SyntaxError("malformed function call");
                     }
@@ -285,6 +298,26 @@ namespace SimpleScheme.Lib
             }
         }
 
+        private static List<SchemeObject> EvalArguments(Environment env, SchemeObject args)
+        {
+            var ret = new List<SchemeObject>();
+            var next = args;
+            while (true)
+            {
+                if (next.Type == ObjectType.EmptyList)
+                {
+                    break;
+                }
+
+                var pair = next.Value<Pair>();
+                ret.Add(pair.Car.Eval(env));
+
+                next = pair.Cdr;
+            }
+
+            return ret;
+        }
+
         private SchemeObject Apply(Environment env, SchemeObject args)
         {
             switch (Type)
@@ -294,6 +327,12 @@ namespace SimpleScheme.Lib
                     SpecialForm form = Value<SpecialForm>();
                     var unEvaluatedArgs = args.Value<Pair>().ToList();
                     return form.Apply(env, unEvaluatedArgs);
+                }
+                case ObjectType.BuiltinFunction:
+                {
+                    BuiltinFunction func = Value<BuiltinFunction>();
+                    List<SchemeObject> evaluatedArgs = EvalArguments(env, args);
+                    return func.Apply(env, evaluatedArgs);
                 }
                 default:
                     throw new Exception($"unsupported yet: {Type}");

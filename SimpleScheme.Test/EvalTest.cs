@@ -139,5 +139,27 @@ namespace SimpleScheme.Test
                 Assert.True(got.IsUndefined());
             }
         }
+
+        [Fact]
+        public void EvalArithmeticOperator()
+        {
+            var interpreter = new Interpreter();
+            var tests = new[]
+            {
+                ("(+)", SchemeObject.CreateFixnum(0)),
+                ("(+ -10)", SchemeObject.CreateFixnum(-10)),
+                ("(+ 1 2 3)", SchemeObject.CreateFixnum(6)),
+                ("(+ 1 2 3.5)", SchemeObject.CreateFloat(6.5)),
+                ("(if #t (+ 1 2) (+ 3 4))", SchemeObject.CreateFixnum(3)),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }

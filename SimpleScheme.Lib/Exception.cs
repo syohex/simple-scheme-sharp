@@ -25,11 +25,11 @@ namespace SimpleScheme.Lib
 
     public class WrongNumberArguments : Exception
     {
-        public WrongNumberArguments(SpecialForm form, int got) : base(ExceptionMessage(form, got))
+        public WrongNumberArguments(Callable form, int got) : base(ExceptionMessage(form, got))
         {
         }
 
-        private static string ExceptionMessage(SpecialForm form, int got)
+        private static string ExceptionMessage(Callable form, int got)
         {
             if (form.Variadic)
             {
@@ -56,6 +56,18 @@ namespace SimpleScheme.Lib
     {
         public SymbolNotDefined(string name) : base($"symbol '{name}' is not defined")
         {
+        }
+    }
+
+    public class WrongTypeArgument : Exception
+    {
+        public WrongTypeArgument(BuiltinFunction func, SchemeObject arg) : base(ExceptionMessage(func, arg))
+        {
+        }
+
+        private static string ExceptionMessage(BuiltinFunction func, SchemeObject arg)
+        {
+            return $"function {func.Name} does not support {arg.Type} argument type";
         }
     }
 }
