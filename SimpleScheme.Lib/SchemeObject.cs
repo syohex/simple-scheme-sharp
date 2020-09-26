@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace SimpleScheme.Lib
@@ -12,7 +13,8 @@ namespace SimpleScheme.Lib
         Character,
         EmptyList,
         Pair,
-        Symbol
+        Symbol,
+        SpecialForm
     }
 
     public class Pair
@@ -24,6 +26,29 @@ namespace SimpleScheme.Lib
         {
             Car = car;
             Cdr = cdr;
+        }
+
+        public List<SchemeObject> ToList()
+        {
+            var args = new List<SchemeObject>();
+            var next = this;
+            while (true)
+            {
+                args.Add(next.Car);
+                if (next.Cdr.Type == ObjectType.EmptyList)
+                {
+                    break;
+                }
+
+                if (next.Cdr.Type != ObjectType.Pair)
+                {
+                    throw new InternalException("dotted pair cannot convert into listed");
+                }
+
+                next = next.Cdr.Value<Pair>();
+            }
+
+            return args;
         }
 
         public override string ToString()
@@ -44,6 +69,18 @@ namespace SimpleScheme.Lib
                     return $"{carStr} . {cdrStr}";
                 }
             }
+        }
+    }
+
+    public class Symbol
+    {
+        public string Name { get; }
+        public SchemeObject Value { get; }
+
+        public Symbol(string name, SchemeObject value)
+        {
+            Name = name;
+            Value = value;
         }
     }
 
@@ -93,9 +130,19 @@ namespace SimpleScheme.Lib
             return new SchemeObject(ObjectType.Pair, new Pair(car, cdr));
         }
 
-        public static SchemeObject CreateSymbol(string name)
+        internal static SchemeObject CreateSymbol(string name)
         {
-            return new SchemeObject(ObjectType.Symbol, name);
+            return CreateSymbol(name, CreateEmptyList());
+        }
+
+        internal static SchemeObject CreateSymbol(string name, SchemeObject value)
+        {
+            return new SchemeObject(ObjectType.Symbol, new Symbol(name, value));
+        }
+
+        public static SchemeObject CreateSpecialForm(SpecialForm form)
+        {
+            return new SchemeObject(ObjectType.SpecialForm, form);
         }
 
         public T Value<T>()
@@ -116,6 +163,7 @@ namespace SimpleScheme.Lib
                 case ObjectType.Character:
                     return Value<char>() == obj.Value<char>();
                 case ObjectType.Boolean:
+                    return Value<bool>() == obj.Value<bool>();
                 case ObjectType.EmptyList:
                 case ObjectType.Symbol:
                     return this == obj;
@@ -141,13 +189,88 @@ namespace SimpleScheme.Lib
                 case ObjectType.EmptyList:
                     return "()";
                 case ObjectType.Pair:
-                {
                     return $"({Value<Pair>()})";
-                }
                 case ObjectType.Symbol:
-                    return Value<string>();
+                    return Value<Symbol>().Name;
+                case ObjectType.SpecialForm:
+                {
+                    var form = Value<SpecialForm>();
+                    return $"#<special {form.Name}>";
+                }
                 default:
                     throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private bool IsSelfEvaluated()
+        {
+            switch (Type)
+            {
+                case ObjectType.Fixnum:
+                case ObjectType.Float:
+                case ObjectType.String:
+                case ObjectType.Boolean:
+                case ObjectType.Character:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public SchemeObject Eval(Environment env)
+        {
+            if (IsSelfEvaluated())
+            {
+                return this;
+            }
+
+            switch (Type)
+            {
+                case ObjectType.Symbol:
+                {
+                    var symbol = Value<Symbol>();
+                    var obj = env.LookUp(symbol.Name);
+                    if (obj == null)
+                    {
+                        throw new UnboundedVariable(symbol);
+                    }
+
+                    return obj.Value<Symbol>().Value;
+                }
+                case ObjectType.Pair:
+                {
+                    var pair = Value<Pair>();
+                    if (pair.Car.Type != ObjectType.Symbol)
+                    {
+                        throw new Exception("unsupported error: " + pair.Car.Type);
+                    }
+
+                    var sym = pair.Car.Value<Symbol>();
+
+                    if (pair.Cdr.Type != ObjectType.Pair)
+                    {
+                        throw new SyntaxError("malformed function call");
+                    }
+
+                    return sym.Value.Apply(env, pair.Cdr);
+                }
+                default:
+                    throw new Exception($"unsupported yet: {Type}");
+            }
+        }
+
+        private SchemeObject Apply(Environment env, SchemeObject args)
+        {
+            switch (Type)
+            {
+                case ObjectType.SpecialForm:
+                {
+                    SpecialForm form = Value<SpecialForm>();
+                    var unEvaluatedArgs = args.Value<Pair>().ToList();
+                    return form.Apply(env, unEvaluatedArgs);
+                }
+                default:
+                    throw new Exception($"unsupported yet: {Type}");
             }
         }
     }

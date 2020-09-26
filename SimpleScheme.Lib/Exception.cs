@@ -4,46 +4,51 @@ namespace SimpleScheme.Lib
 {
     public class InternalException : Exception
     {
-        public InternalException()
-        {
-        }
-
         public InternalException(string message) : base(message)
-        {
-        }
-
-        public InternalException(string message, Exception innerException) : base(message, innerException)
         {
         }
     }
 
     public class UnsupportedDataType : Exception
     {
-        public UnsupportedDataType()
-        {
-        }
-
         public UnsupportedDataType(string message) : base(message)
-        {
-        }
-
-        public UnsupportedDataType(string message, Exception innerException) : base(message, innerException)
         {
         }
     }
 
     public class SyntaxError : Exception
     {
-        public SyntaxError()
-        {
-        }
-
         public SyntaxError(string message) : base(message)
         {
         }
+    }
 
-        public SyntaxError(string message, Exception innerException) : base(message, innerException)
+    public class WrongNumberArguments : Exception
+    {
+        public WrongNumberArguments(SpecialForm form, int got) : base(ExceptionMessage(form, got))
         {
+        }
+
+        private static string ExceptionMessage(SpecialForm form, int got)
+        {
+            if (form.Variadic)
+            {
+                return $"wrong number of arguments for #<special {form.Name} (required >= {form.Arity}, got {got})>";
+            }
+
+            return $"wrong number of arguments for #<special {form.Name} (required {form.Arity}, got {got})>";
+        }
+    }
+
+    public class UnboundedVariable : Exception
+    {
+        public UnboundedVariable(Symbol symbol) : base(ExceptionMessage(symbol))
+        {
+        }
+
+        private static string ExceptionMessage(Symbol symbol)
+        {
+            return $"unbound variable: {symbol.Name}";
         }
     }
 }

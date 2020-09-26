@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using SimpleScheme.Lib;
@@ -31,7 +30,7 @@ namespace SimpleScheme.Test
         [Fact]
         public void ReadFixnum()
         {
-            var inputs = new ValueTuple<string, long>[]
+            var inputs = new[]
             {
                 ("  12345 ", 12345),
                 ("-42", -42),
@@ -40,7 +39,7 @@ namespace SimpleScheme.Test
             };
             foreach (var (input, expected) in inputs)
             {
-                TestReadValue(input, ObjectType.Fixnum, expected);
+                TestReadValue<long>(input, ObjectType.Fixnum, expected);
             }
         }
 

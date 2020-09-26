@@ -16,6 +16,7 @@ namespace SimpleScheme.Test
                 SchemeObject.CreatePair(obj2, SchemeObject.CreateEmptyList())
             );
 
+            var interpreter = new Interpreter();
             var tests = new[]
             {
                 ("10", SchemeObject.CreateFixnum(10)),
@@ -27,7 +28,7 @@ namespace SimpleScheme.Test
                 ("()", SchemeObject.CreateEmptyList()),
                 ("(42 . \"hello\")", SchemeObject.CreatePair(obj1, obj2)),
                 ("(42 \"hello\")", pair),
-                ("foo", SchemeObject.CreateSymbol("foo")),
+                ("foo", interpreter.Intern("foo")),
             };
 
             foreach (var (expected, input) in tests)

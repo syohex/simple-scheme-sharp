@@ -1,42 +1,16 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace SimpleScheme.Lib
 {
-    internal class SymbolTable
-    {
-        private readonly Dictionary<string, SchemeObject> _table;
-
-        public SymbolTable()
-        {
-            _table = new Dictionary<string, SchemeObject>();
-        }
-
-        public SchemeObject? LookUp(string name)
-        {
-            if (_table.TryGetValue(name, out SchemeObject symbol))
-            {
-                return symbol;
-            }
-
-            return null;
-        }
-
-        public void RegisterSymbol(string name, SchemeObject symbol)
-        {
-            _table[name] = symbol;
-        }
-    }
-
     public class Interpreter
     {
         private readonly SchemeObject _trueObj;
         private readonly SchemeObject _falseObj;
         public SchemeObject EmptyList { get; }
-        private readonly SymbolTable _symbolTable;
+        private readonly SymbolTable _globalSymbolTable;
 
         public Interpreter()
         {
@@ -44,7 +18,9 @@ namespace SimpleScheme.Lib
             _falseObj = SchemeObject.CreateBoolean(false);
             EmptyList = SchemeObject.CreateEmptyList();
 
-            _symbolTable = new SymbolTable();
+            _globalSymbolTable = new SymbolTable();
+
+            SpecialForm.SetupBuiltinSpecialForms(_globalSymbolTable);
         }
 
         private bool IsAlphabetic(int c)
@@ -69,7 +45,7 @@ namespace SimpleScheme.Lib
             return IsAlphabetic(c) || ((IList) cs).Contains(c);
         }
 
-        private SchemeObject ReadNumber(Reader reader, int c)
+        private SchemeObject ReadNumber(Reader r, int c)
         {
             var positive = true;
             switch (c)
@@ -80,7 +56,7 @@ namespace SimpleScheme.Lib
                     positive = false;
                     break;
                 default:
-                    reader.PutBackCharacter(c);
+                    r.PutBackCharacter(c);
                     break;
             }
 
@@ -89,10 +65,10 @@ namespace SimpleScheme.Lib
             double value = 0;
             double div = 10;
             double eValue = 0;
-            double eSign = 1;
+            int eSign = 1;
             while (true)
             {
-                c = reader.NextChar();
+                c = r.NextChar();
                 if (c == -1)
                 {
                     break;
@@ -103,7 +79,7 @@ namespace SimpleScheme.Lib
                     if (hasPoint)
                     {
                         throw new SyntaxError(
-                            $"floating point value has multiple dot(Line {reader.Line}:{reader.Column}");
+                            $"floating point value has multiple dot(Line {r.Line}:{r.Column}");
                     }
 
                     hasPoint = true;
@@ -115,7 +91,7 @@ namespace SimpleScheme.Lib
                     if (hasE)
                     {
                         throw new SyntaxError(
-                            $"floating point value has multiple 'e'(Line {reader.Line}:{reader.Column}");
+                            $"floating point value has multiple 'e'(Line {r.Line}:{r.Column}");
                     }
 
                     hasE = true;
@@ -160,8 +136,10 @@ namespace SimpleScheme.Lib
 
             if (!IsDelimiter(c))
             {
-                throw new SyntaxError($"number is not followed by delimiter({reader.PosInfo()})");
+                throw new SyntaxError($"number is not followed by delimiter({r.PosInfo()})");
             }
+
+            r.PutBackCharacter(c);
 
             if (hasPoint || (hasE && eSign == -1))
             {
@@ -243,6 +221,11 @@ namespace SimpleScheme.Lib
             r.SkipWhiteSpaces();
 
             int c = r.NextChar();
+            if (c == -1)
+            {
+                throw new SyntaxError($"pair is not closed{r.PosInfo()}");
+            }
+
             if (c == ')')
             {
                 return EmptyList;
@@ -280,16 +263,16 @@ namespace SimpleScheme.Lib
             return SchemeObject.CreatePair(car, cdr);
         }
 
-        private SchemeObject Intern(string name)
+        public SchemeObject Intern(string name)
         {
-            SchemeObject? obj = _symbolTable.LookUp(name);
+            SchemeObject? obj = _globalSymbolTable.LookUp(name);
             if (obj != null)
             {
                 return obj;
             }
 
             SchemeObject sym = SchemeObject.CreateSymbol(name);
-            _symbolTable.RegisterSymbol(name, sym);
+            _globalSymbolTable.RegisterSymbol(sym);
             return sym;
         }
 
@@ -367,6 +350,15 @@ namespace SimpleScheme.Lib
                 return ReadPair(r);
             }
 
+
+            // quoted
+            if (c == '\'')
+            {
+                var quote = Intern("quote");
+                var rest = SchemeObject.CreatePair(Read(r), SchemeObject.CreateEmptyList());
+                return SchemeObject.CreatePair(quote, rest);
+            }
+
             // Symbol
             if (IsSymbolCharacter(c))
             {
@@ -379,6 +371,11 @@ namespace SimpleScheme.Lib
         public SchemeObject Read(TextReader reader)
         {
             return Read(new Reader(reader));
+        }
+
+        public SchemeObject Eval(SchemeObject expr)
+        {
+            return expr.Eval(new Environment(_globalSymbolTable));
         }
 
         public bool IsEmptyList(SchemeObject obj)
