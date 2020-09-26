@@ -47,6 +47,7 @@ namespace SimpleScheme.Lib
             InstallSpecialForm(table, "set!", Set, 2, false);
             InstallSpecialForm(table, "if", If, 2, true);
             InstallSpecialForm(table, "lambda", Lambda, 1, true);
+            InstallSpecialForm(table, "begin", Begin, 0, true);
         }
 
         private static SchemeObject Quote(Environment env, List<SchemeObject> args, SpecialForm self)
@@ -149,6 +150,22 @@ namespace SimpleScheme.Lib
             }
 
             return SchemeObject.CreateClosure(new Closure(null, param, body, env));
+        }
+
+        private static SchemeObject Begin(Environment env, List<SchemeObject> args, SpecialForm self)
+        {
+            var ret = SchemeObject.CreateUndefined();
+            if (args.Count == 0)
+            {
+                return ret;
+            }
+
+            foreach (var arg in args)
+            {
+                ret = arg.Eval(env);
+            }
+
+            return ret;
         }
     }
 }

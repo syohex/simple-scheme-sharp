@@ -224,11 +224,11 @@ namespace SimpleScheme.Lib
                 case ObjectType.Boolean:
                     return Value<bool>() == obj.Value<bool>();
                 case ObjectType.Symbol:
+                case ObjectType.SpecialForm:
+                case ObjectType.BuiltinFunction:
                     return this == obj;
                 case ObjectType.EmptyList:
                 case ObjectType.Undefined:
-                case ObjectType.SpecialForm:
-                case ObjectType.BuiltinFunction:
                     return Type == obj.Type;
                 default:
                     throw new InternalException($"type '{Type}' is not comparable");
@@ -447,7 +447,16 @@ namespace SimpleScheme.Lib
                 case ObjectType.SpecialForm:
                 {
                     var form = Value<SpecialForm>();
-                    var unEvaluatedArgs = args.Value<Pair>().ToList();
+                    List<SchemeObject> unEvaluatedArgs;
+                    if (args.Type == ObjectType.EmptyList)
+                    {
+                        unEvaluatedArgs = new List<SchemeObject>();
+                    }
+                    else
+                    {
+                        unEvaluatedArgs = args.Value<Pair>().ToList();
+                    }
+
                     return form.Apply(env, unEvaluatedArgs);
                 }
                 case ObjectType.BuiltinFunction:
