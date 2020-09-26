@@ -235,7 +235,14 @@ namespace SimpleScheme.Test
                 ("(+ -10)", SchemeObject.CreateFixnum(-10)),
                 ("(+ 1 2 3)", SchemeObject.CreateFixnum(6)),
                 ("(+ 1 2 3.5)", SchemeObject.CreateFloat(6.5)),
-                ("(if #t (+ 1 2) (+ 3 4))", SchemeObject.CreateFixnum(3)),
+                ("(- 1)", SchemeObject.CreateFixnum(-1)),
+                ("(- 10 5 3)", SchemeObject.CreateFixnum(2)),
+                ("(*)", SchemeObject.CreateFixnum(1)),
+                ("(* 2 2.5)", SchemeObject.CreateFloat(5.0)),
+                ("(/ 2)", SchemeObject.CreateFloat(0.5)),
+                ("(/ 10 2.5)", SchemeObject.CreateFloat(4.0)),
+                ("(mod 10 3)", SchemeObject.CreateFixnum(1)),
+                ("(- (+ 1 2 3 4 5) (* 2 3))", SchemeObject.CreateFixnum(9)),
             };
 
             foreach (var (input, expected) in tests)

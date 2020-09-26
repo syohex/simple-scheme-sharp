@@ -64,7 +64,12 @@ namespace SimpleScheme.Lib
             InstallBuiltinFunction(table, "symbol->string", SymbolToString, 1, true);
             InstallBuiltinFunction(table, "string->symbol", StringToSymbol, 1, true);
 
+            // arithmetic operator
             InstallBuiltinFunction(table, "+", Add, 0, true);
+            InstallBuiltinFunction(table, "-", Substract, 1, true);
+            InstallBuiltinFunction(table, "*", Multiply, 0, true);
+            InstallBuiltinFunction(table, "/", Divide, 1, true);
+            InstallBuiltinFunction(table, "mod", Modulo, 2, false);
         }
 
         private static SchemeObject IsNull(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -187,27 +192,118 @@ namespace SimpleScheme.Lib
             return env.Intern(args[0].Value<string>());
         }
 
+        private static (double, bool) RetrieveNumber(SchemeObject arg, BuiltinFunction self)
+        {
+            switch (arg.Type)
+            {
+                case ObjectType.Fixnum:
+                    return (arg.Value<long>(), false);
+                case ObjectType.Float:
+                    return (arg.Value<double>(), true);
+                default:
+                    throw new WrongTypeArgument(self, arg);
+            }
+        }
+
         private static SchemeObject Add(Environment env, List<SchemeObject> args, BuiltinFunction self)
         {
             bool hasFloat = false;
-            double val = 0;
+            double ret = 0;
             foreach (var arg in args)
             {
-                switch (arg.Type)
+                var (val, isFloat) = RetrieveNumber(arg, self);
+                ret += val;
+
+                if (isFloat)
                 {
-                    case ObjectType.Fixnum:
-                        val += arg.Value<long>();
-                        break;
-                    case ObjectType.Float:
-                        hasFloat = true;
-                        val += arg.Value<double>();
-                        break;
-                    default:
-                        throw new WrongTypeArgument(self, arg);
+                    hasFloat = true;
                 }
             }
 
-            return hasFloat ? SchemeObject.CreateFloat(val) : SchemeObject.CreateFixnum((long) val);
+            return hasFloat ? SchemeObject.CreateFloat(ret) : SchemeObject.CreateFixnum((long) ret);
+        }
+
+        private static SchemeObject Substract(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var (val, isFloat) = RetrieveNumber(args[0], self);
+            if (args.Count == 1)
+            {
+                return isFloat ? SchemeObject.CreateFloat(-1 * val) : SchemeObject.CreateFixnum((long) (-1 * val));
+            }
+
+            bool hasFloat = false;
+            double ret = val;
+            for (var i = 1; i < args.Count; ++i)
+            {
+                (val, isFloat) = RetrieveNumber(args[i], self);
+                ret -= val;
+                if (isFloat)
+                {
+                    hasFloat = true;
+                }
+            }
+
+            return hasFloat ? SchemeObject.CreateFloat(ret) : SchemeObject.CreateFixnum((long) ret);
+        }
+
+        private static SchemeObject Multiply(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            bool hasFloat = false;
+            double ret = 1;
+            foreach (var arg in args)
+            {
+                var (val, isFloat) = RetrieveNumber(arg, self);
+                ret *= val;
+                if (isFloat)
+                {
+                    hasFloat = true;
+                }
+            }
+
+            return hasFloat ? SchemeObject.CreateFloat(ret) : SchemeObject.CreateFixnum((long) ret);
+        }
+
+        private static SchemeObject Divide(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var (val, _) = RetrieveNumber(args[0], self);
+            if (args.Count == 1)
+            {
+                if (val == 0)
+                {
+                    throw new RuntimeException("division by zero");
+                }
+
+                return SchemeObject.CreateFloat(1.0 / val);
+            }
+
+            bool hasFloat = false;
+            double ret = val;
+            for (var i = 1; i < args.Count; ++i)
+            {
+                bool isFloat;
+                (val, isFloat) = RetrieveNumber(args[i], self);
+                if (val == 0)
+                {
+                    throw new RuntimeException("division by zero");
+                }
+
+                ret /= val;
+                if (isFloat)
+                {
+                    hasFloat = true;
+                }
+            }
+
+            return hasFloat ? SchemeObject.CreateFloat(ret) : SchemeObject.CreateFixnum((long) ret);
+        }
+
+        private static SchemeObject Modulo(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var (val1, hasFloat1) = RetrieveNumber(args[0], self);
+            var (val2, hasFloat2) = RetrieveNumber(args[1], self);
+
+            double ret = val1 % val2;
+            return hasFloat1 || hasFloat2 ? SchemeObject.CreateFloat(ret) : SchemeObject.CreateFixnum((long) ret);
         }
     }
 }

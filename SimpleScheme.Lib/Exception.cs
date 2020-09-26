@@ -70,4 +70,11 @@ namespace SimpleScheme.Lib
             return $"function {func.Name} does not support {arg.Type} argument type";
         }
     }
+
+    public class RuntimeException : Exception
+    {
+        public RuntimeException(string message) : base(message)
+        {
+        }
+    }
 }
