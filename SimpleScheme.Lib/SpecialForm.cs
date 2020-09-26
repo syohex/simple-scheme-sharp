@@ -48,6 +48,7 @@ namespace SimpleScheme.Lib
             InstallSpecialForm(table, "if", If, 2, true);
             InstallSpecialForm(table, "lambda", Lambda, 1, true);
             InstallSpecialForm(table, "begin", Begin, 0, true);
+            InstallSpecialForm(table, "cond", Cond, 1, true);
         }
 
         private static SchemeObject Quote(Environment env, List<SchemeObject> args, SpecialForm self)
@@ -166,6 +167,37 @@ namespace SimpleScheme.Lib
             }
 
             return ret;
+        }
+
+        private static SchemeObject Cond(Environment env, List<SchemeObject> args, SpecialForm self)
+        {
+            foreach (var expr in args)
+            {
+                if (expr.Type != ObjectType.Pair)
+                {
+                    throw new SyntaxError($"syntax error: ${expr}");
+                }
+
+                var pair = expr.Value<Pair>();
+                var cond = pair.Car.Eval(env);
+                if (cond.IsTrue())
+                {
+                    var ret = SchemeObject.CreateUndefined();
+                    var next = pair;
+                    while (true)
+                    {
+                        if (next.Cdr.Type == ObjectType.EmptyList)
+                        {
+                            return ret;
+                        }
+
+                        next = next.Cdr.Value<Pair>();
+                        ret = next.Car.Eval(env);
+                    }
+                }
+            }
+
+            return SchemeObject.CreateUndefined();
         }
     }
 }

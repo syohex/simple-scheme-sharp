@@ -376,5 +376,25 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalCond()
+        {
+            var interpreter = new Interpreter();
+            var tests = new[]
+            {
+                ("(cond (#t 10) (#f 20))", SchemeObject.CreateFixnum(10)),
+                ("(cond (#f 10) (#t 1 2 3 20))", SchemeObject.CreateFixnum(20)),
+                ("(cond (#f 10) (#f 20))", SchemeObject.CreateUndefined())
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }
