@@ -437,5 +437,27 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalOrAnd()
+        {
+            var interpreter = new Interpreter();
+            var tests = new[]
+            {
+                ("(and 1 2 #f 3)", SchemeObject.CreateBoolean(false)),
+                ("(and 1 2 3)", SchemeObject.CreateFixnum(3)),
+                ("(and)", SchemeObject.CreateBoolean(true)),
+                ("(or)", SchemeObject.CreateBoolean(false)),
+                ("(or #f \"foo\" #t #t)", SchemeObject.CreateString("foo")),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }

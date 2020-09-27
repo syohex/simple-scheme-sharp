@@ -50,6 +50,8 @@ namespace SimpleScheme.Lib
             InstallSpecialForm(table, "begin", Begin, 0, true);
             InstallSpecialForm(table, "cond", Cond, 1, true);
             InstallSpecialForm(table, "let", Let, 1, true);
+            InstallSpecialForm(table, "or", Or, 0, true);
+            InstallSpecialForm(table, "and", And, 0, true);
         }
 
         private static SchemeObject Quote(Environment env, List<SchemeObject> args, SpecialForm self)
@@ -223,6 +225,7 @@ namespace SimpleScheme.Lib
                 {
                     throw new SyntaxError($"binding name is not symbol: ${pair.Car}");
                 }
+
                 if (pair.Cdr.Type != ObjectType.Pair)
                 {
                     throw new SyntaxError($"binding value is not malformed: ${pair.Cdr}");
@@ -255,6 +258,45 @@ namespace SimpleScheme.Lib
             }
 
             env.PopFrame();
+
+            return ret;
+        }
+
+        private static SchemeObject Or(Environment env, List<SchemeObject> args, SpecialForm self)
+        {
+            if (args.Count == 0)
+            {
+                return SchemeObject.CreateBoolean(false);
+            }
+
+            foreach (var arg in args)
+            {
+                var ret = arg.Eval(env);
+                if (ret.IsTrue())
+                {
+                    return ret;
+                }
+            }
+
+            return SchemeObject.CreateBoolean(false);
+        }
+
+        private static SchemeObject And(Environment env, List<SchemeObject> args, SpecialForm self)
+        {
+            if (args.Count == 0)
+            {
+                return SchemeObject.CreateBoolean(true);
+            }
+
+            SchemeObject ret = SchemeObject.CreateUndefined();
+            foreach (var arg in args)
+            {
+                ret = arg.Eval(env);
+                if (!ret.IsTrue())
+                {
+                    return SchemeObject.CreateBoolean(false);
+                }
+            }
 
             return ret;
         }
