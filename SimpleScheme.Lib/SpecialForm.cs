@@ -49,6 +49,7 @@ namespace SimpleScheme.Lib
             InstallSpecialForm(table, "lambda", Lambda, 1, true);
             InstallSpecialForm(table, "begin", Begin, 0, true);
             InstallSpecialForm(table, "cond", Cond, 1, true);
+            InstallSpecialForm(table, "let", Let, 1, true);
         }
 
         private static SchemeObject Quote(Environment env, List<SchemeObject> args, SpecialForm self)
@@ -198,6 +199,64 @@ namespace SimpleScheme.Lib
             }
 
             return SchemeObject.CreateUndefined();
+        }
+
+        private static SchemeObject Let(Environment env, List<SchemeObject> args, SpecialForm self)
+        {
+            if (args[0].Type != ObjectType.Pair)
+            {
+                throw new SyntaxError($"syntax error: ${args[0]}");
+            }
+
+            var bindings = new Bindings();
+            var pair = args[0].Value<Pair>();
+            var next = pair;
+            while (true)
+            {
+                if (next.Car.Type != ObjectType.Pair)
+                {
+                    throw new SyntaxError($"syntax error in let binding: ${next.Car}");
+                }
+
+                pair = next.Car.Value<Pair>();
+                if (pair.Car.Type != ObjectType.Symbol)
+                {
+                    throw new SyntaxError($"binding name is not symbol: ${pair.Car}");
+                }
+                if (pair.Cdr.Type != ObjectType.Pair)
+                {
+                    throw new SyntaxError($"binding value is not malformed: ${pair.Cdr}");
+                }
+
+                var name = pair.Car.Value<Symbol>().Name;
+                var value = pair.Cdr.Value<Pair>().Car.Eval(env);
+                bindings.AddBinding(name, value);
+
+                if (next.Cdr.Type == ObjectType.EmptyList)
+                {
+                    break;
+                }
+
+                if (next.Cdr.Type != ObjectType.Pair)
+                {
+                    throw new SyntaxError($"syntax error: ${next.Cdr}");
+                }
+
+                next = next.Cdr.Value<Pair>();
+            }
+
+            Frame letFrame = new Frame(bindings);
+            env.PushFrame(letFrame);
+
+            var ret = SchemeObject.CreateUndefined();
+            for (var i = 1; i < args.Count; ++i)
+            {
+                ret = args[i].Eval(env);
+            }
+
+            env.PopFrame();
+
+            return ret;
         }
     }
 }

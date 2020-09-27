@@ -416,5 +416,26 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalLet()
+        {
+            var interpreter = new Interpreter();
+            var tests = new[]
+            {
+                (@"(let ((x (+ 1 1))
+                         (y (- 5 2)))
+                    (+ x y))", SchemeObject.CreateFixnum(5)),
+                (@"(let ((a 10)))", SchemeObject.CreateUndefined()),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }
