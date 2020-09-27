@@ -17,7 +17,8 @@ namespace SimpleScheme.Lib
         Undefined,
         SpecialForm,
         BuiltinFunction,
-        Closure
+        Closure,
+        Environment
     }
 
     public class Pair
@@ -204,6 +205,11 @@ namespace SimpleScheme.Lib
             return new SchemeObject(ObjectType.Undefined, -1); // dummy value
         }
 
+        public static SchemeObject CreateEnvironment(SymbolTable globalTable)
+        {
+            return new SchemeObject(ObjectType.Environment, new Environment(globalTable));
+        }
+
         public T Value<T>()
         {
             return (T) _value;
@@ -226,6 +232,7 @@ namespace SimpleScheme.Lib
                 case ObjectType.Symbol:
                 case ObjectType.SpecialForm:
                 case ObjectType.BuiltinFunction:
+                case ObjectType.Environment:
                     return this == obj;
                 case ObjectType.EmptyList:
                 case ObjectType.Undefined:
@@ -273,6 +280,8 @@ namespace SimpleScheme.Lib
                 }
                 case ObjectType.Undefined:
                     return "#<undef>";
+                case ObjectType.Environment:
+                    return "#<environment>";
                 default:
                     throw new ArgumentOutOfRangeException();
             }

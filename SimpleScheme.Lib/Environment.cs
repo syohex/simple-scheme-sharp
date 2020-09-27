@@ -130,11 +130,6 @@ namespace SimpleScheme.Lib
     {
         private readonly List<Bindings> _bindings;
 
-        public Frame()
-        {
-            _bindings = new List<Bindings>();
-        }
-
         public Frame(Bindings bindings)
         {
             _bindings = new List<Bindings>() {bindings};
@@ -190,13 +185,13 @@ namespace SimpleScheme.Lib
 
     public class Environment
     {
-        private readonly SymbolTable _globalTable;
+        public SymbolTable GlobalTable { get; }
         private List<Frame> Frames { get; set; }
         private Environment? _environment;
 
         public Environment(SymbolTable table)
         {
-            _globalTable = table;
+            GlobalTable = table;
             Frames = new List<Frame>();
             _environment = null;
         }
@@ -213,12 +208,12 @@ namespace SimpleScheme.Lib
 
         public SchemeObject Intern(string name)
         {
-            return _globalTable.Intern(name);
+            return GlobalTable.Intern(name);
         }
 
         public Environment Copy()
         {
-            return new Environment(_globalTable) {Frames = new List<Frame>(Frames)};
+            return new Environment(GlobalTable) {Frames = new List<Frame>(Frames)};
         }
 
         public void PushFrame(Frame frame)
@@ -272,7 +267,7 @@ namespace SimpleScheme.Lib
                 }
             }
 
-            return _globalTable.LookUpValue(name);
+            return GlobalTable.LookUpValue(name);
         }
 
         public SchemeObject Define(SchemeObject symbol, SchemeObject value)
@@ -280,7 +275,7 @@ namespace SimpleScheme.Lib
             var sym = symbol.Value<Symbol>();
             if (Frames.Count == 0) // define as global variable
             {
-                _globalTable.RegisterValue(symbol, value);
+                GlobalTable.RegisterValue(symbol, value);
                 return symbol;
             }
 
@@ -297,12 +292,12 @@ namespace SimpleScheme.Lib
                 return value;
             }
 
-            if (_globalTable.LookUpSymbol(sym.Name) == null)
+            if (GlobalTable.LookUpSymbol(sym.Name) == null)
             {
                 throw new SymbolNotDefined(sym.Name);
             }
 
-            _globalTable.RegisterValue(symbol, value);
+            GlobalTable.RegisterValue(symbol, value);
             return value;
         }
     }

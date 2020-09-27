@@ -481,5 +481,37 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalEval()
+        {
+            var interpreter = new Interpreter();
+            var inputs = new[]
+            {
+                "(define env (environment))",
+                "(eval '(define z 25) env)",
+                "(eval '(define y \"foo\") env)",
+            };
+            foreach (var input in inputs)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                interpreter.Eval(expr);
+            }
+
+            var tests = new[]
+            {
+                ("(eval 'z env)", SchemeObject.CreateFixnum(25)),
+                ("(eval 'y env)", SchemeObject.CreateString("foo")),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }

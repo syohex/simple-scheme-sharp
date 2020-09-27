@@ -46,24 +46,26 @@ namespace SimpleScheme.Lib
 
         public static void SetupBuiltinFunction(SymbolTable table)
         {
+            InstallBuiltinFunction(table, "environment", NewEnvironment, 0, false);
+
             // type functions
-            InstallBuiltinFunction(table, "null?", IsNull, 1, true);
-            InstallBuiltinFunction(table, "boolean?", IsBool, 1, true);
-            InstallBuiltinFunction(table, "symbol?", IsSymbol, 1, true);
-            InstallBuiltinFunction(table, "integer?", IsInteger, 1, true);
-            InstallBuiltinFunction(table, "float?", IsFloat, 1, true);
-            InstallBuiltinFunction(table, "char?", IsCharacter, 1, true);
-            InstallBuiltinFunction(table, "string?", IsString, 1, true);
-            InstallBuiltinFunction(table, "pair?", IsPair, 1, true);
-            InstallBuiltinFunction(table, "procedure?", IsProcedure, 1, true);
+            InstallBuiltinFunction(table, "null?", IsNull, 1, false);
+            InstallBuiltinFunction(table, "boolean?", IsBool, 1, false);
+            InstallBuiltinFunction(table, "symbol?", IsSymbol, 1, false);
+            InstallBuiltinFunction(table, "integer?", IsInteger, 1, false);
+            InstallBuiltinFunction(table, "float?", IsFloat, 1, false);
+            InstallBuiltinFunction(table, "char?", IsCharacter, 1, false);
+            InstallBuiltinFunction(table, "string?", IsString, 1, false);
+            InstallBuiltinFunction(table, "pair?", IsPair, 1, false);
+            InstallBuiltinFunction(table, "procedure?", IsProcedure, 1, false);
 
             // conversion functions
-            InstallBuiltinFunction(table, "char->integer", CharToInteger, 1, true);
-            InstallBuiltinFunction(table, "integer->char", IntegerToChar, 1, true);
-            InstallBuiltinFunction(table, "number->string", NumberToString, 1, true);
-            InstallBuiltinFunction(table, "string->number", StringToNumber, 1, true);
-            InstallBuiltinFunction(table, "symbol->string", SymbolToString, 1, true);
-            InstallBuiltinFunction(table, "string->symbol", StringToSymbol, 1, true);
+            InstallBuiltinFunction(table, "char->integer", CharToInteger, 1, false);
+            InstallBuiltinFunction(table, "integer->char", IntegerToChar, 1, false);
+            InstallBuiltinFunction(table, "number->string", NumberToString, 1, false);
+            InstallBuiltinFunction(table, "string->number", StringToNumber, 1, false);
+            InstallBuiltinFunction(table, "symbol->string", SymbolToString, 1, false);
+            InstallBuiltinFunction(table, "string->symbol", StringToSymbol, 1, false);
 
             // arithmetic operator
             InstallBuiltinFunction(table, "+", Add, 0, true);
@@ -86,6 +88,13 @@ namespace SimpleScheme.Lib
 
             // function
             InstallBuiltinFunction(table, "apply", Apply, 1, true);
+
+            InstallBuiltinFunction(table, "eval", Eval, 2, false);
+        }
+
+        private static SchemeObject NewEnvironment(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            return SchemeObject.CreateEnvironment(env.GlobalTable);
         }
 
         private static SchemeObject IsNull(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -476,6 +485,16 @@ namespace SimpleScheme.Lib
 
             var application = args[0].Value<IApplication>();
             return application.Apply(env, actualArgs);
+        }
+
+        private static SchemeObject Eval(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[1].Type != ObjectType.Environment)
+            {
+                throw new SyntaxError("2nd argument eval must be an environment");
+            }
+
+            return args[0].Eval(args[1].Value<Environment>());
         }
     }
 }
