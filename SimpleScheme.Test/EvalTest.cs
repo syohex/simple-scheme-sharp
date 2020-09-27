@@ -459,5 +459,27 @@ namespace SimpleScheme.Test
                 Assert.True(got.Equal(expected));
             }
         }
+
+        [Fact]
+        public void EvalApply()
+        {
+            var interpreter = new Interpreter();
+            var tests = new[]
+            {
+                ("(apply +)", SchemeObject.CreateFixnum(0)),
+                ("(apply *)", SchemeObject.CreateFixnum(1)),
+                ("(apply + '(1 2 3))", SchemeObject.CreateFixnum(6)),
+                ("(apply + 1 2 3 '(4 5))", SchemeObject.CreateFixnum(15)),
+                ("(apply * 1 2 3 4 5 '())", SchemeObject.CreateFixnum(120)),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                using var reader = new StringReader(input);
+                var expr = interpreter.Read(reader);
+                var got = interpreter.Eval(expr);
+                Assert.True(got.Equal(expected));
+            }
+        }
     }
 }

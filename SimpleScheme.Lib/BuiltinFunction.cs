@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace SimpleScheme.Lib
 {
-    public class BuiltinFunction : Callable
+    public class BuiltinFunction : Callable, IApplication
     {
         private delegate SchemeObject BuiltinFunctionCode(Environment env, List<SchemeObject> args,
             BuiltinFunction self);
@@ -82,6 +83,9 @@ namespace SimpleScheme.Lib
 
             // compare
             InstallBuiltinFunction(table, "eq?", Eq, 2, false);
+
+            // function
+            InstallBuiltinFunction(table, "apply", Apply, 1, true);
         }
 
         private static SchemeObject IsNull(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -435,6 +439,43 @@ namespace SimpleScheme.Lib
                 default:
                     return SchemeObject.CreateBoolean(args[0] == args[1]);
             }
+        }
+
+        private static SchemeObject Apply(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (!args[0].IsApplicable())
+            {
+                throw new SyntaxError("first argument of apply must be an application");
+            }
+
+            if (args.Count > 1 && !args.Last().IsListType())
+            {
+                throw new SyntaxError($"last argument of apply must be a pair: {args.Last()}");
+            }
+
+            var actualArgs = new List<SchemeObject>();
+            for (var i = 1; i < args.Count - 1; ++i)
+            {
+                actualArgs.Add(args[i]);
+            }
+
+            if (args.Count > 1 && args.Last().Type != ObjectType.EmptyList)
+            {
+                var next = args.Last().Value<Pair>();
+                while (true)
+                {
+                    actualArgs.Add(next.Car.Eval(env));
+                    if (next.Cdr.Type == ObjectType.EmptyList)
+                    {
+                        break;
+                    }
+
+                    next = next.Cdr.Value<Pair>();
+                }
+            }
+
+            var application = args[0].Value<IApplication>();
+            return application.Apply(env, actualArgs);
         }
     }
 }

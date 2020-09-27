@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SimpleScheme.Lib
 {
     public abstract class Callable
@@ -12,5 +14,10 @@ namespace SimpleScheme.Lib
             Arity = arity;
             Variadic = variadic;
         }
+    }
+
+    public interface IApplication
+    {
+        public SchemeObject Apply(Environment env, List<SchemeObject> actualArgs);
     }
 }

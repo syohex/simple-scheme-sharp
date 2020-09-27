@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace SimpleScheme.Lib
 {
-    public class Closure : Callable
+    public class Closure : Callable, IApplication
     {
         private readonly List<SchemeObject> _params;
         private readonly List<SchemeObject> _body;
