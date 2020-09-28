@@ -8,13 +8,18 @@ namespace SimpleScheme.Test
 {
     public class EvalTest
     {
-        private static SchemeObject ReadEval(Interpreter interpreter, string input)
+        private static SchemeObject ReadEval(Interpreter interpreter, string input, bool dump = false)
         {
             using var reader = new StringReader(input);
             var expr = interpreter.Read(reader);
             if (expr == null)
             {
                 throw new Exception("input is invalid");
+            }
+
+            if (dump)
+            {
+                Console.WriteLine($"## Read expr: {expr}");
             }
 
             return interpreter.Eval(expr);
@@ -475,6 +480,45 @@ namespace SimpleScheme.Test
                 var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
+        }
+
+        [Fact]
+        public void EvalLoad()
+        {
+            var tempFile = Path.GetTempFileName();
+            var content = @"
+(define (length lst)
+  (if (null? lst)
+       0
+     (+ 1 (length (cdr lst)))))
+";
+            using (var stream = new StreamWriter(tempFile))
+            {
+                stream.Write(content);
+            }
+
+            var interpreter = new Interpreter();
+            var inputs = new[]
+            {
+                $"(load \"{tempFile}\")",
+            };
+            foreach (var input in inputs)
+            {
+                ReadEval(interpreter, input);
+            }
+
+            var tests = new[]
+            {
+                ("(length '(1 2 3 4 5))", SchemeObject.CreateFixnum(5)),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                var got = ReadEval(interpreter, input);
+                Assert.True(got.Equal(expected));
+            }
+
+            File.Delete(tempFile);
         }
     }
 }

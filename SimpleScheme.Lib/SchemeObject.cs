@@ -207,7 +207,7 @@ namespace SimpleScheme.Lib
 
         public static SchemeObject CreateEnvironment(SymbolTable globalTable)
         {
-            return new SchemeObject(ObjectType.Environment, new Environment(globalTable));
+            return new SchemeObject(ObjectType.Environment, new Environment(globalTable, null));
         }
 
         public T Value<T>()

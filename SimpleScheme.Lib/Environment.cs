@@ -185,12 +185,14 @@ namespace SimpleScheme.Lib
 
     public class Environment
     {
+        public Interpreter? Interpreter { get; }
         public SymbolTable GlobalTable { get; }
         private List<Frame> Frames { get; set; }
         private Environment? _environment;
 
-        public Environment(SymbolTable table)
+        public Environment(SymbolTable table, Interpreter? interpreter)
         {
+            Interpreter = interpreter;
             GlobalTable = table;
             Frames = new List<Frame>();
             _environment = null;
@@ -213,7 +215,7 @@ namespace SimpleScheme.Lib
 
         public Environment Copy()
         {
-            return new Environment(GlobalTable) {Frames = new List<Frame>(Frames)};
+            return new Environment(GlobalTable, Interpreter) {Frames = new List<Frame>(Frames)};
         }
 
         public void PushFrame(Frame frame)

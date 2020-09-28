@@ -386,7 +386,7 @@ namespace SimpleScheme.Lib
 
         public SchemeObject Eval(SchemeObject expr)
         {
-            return expr.Eval(new Environment(_globalSymbolTable));
+            return expr.Eval(new Environment(_globalSymbolTable, this));
         }
     }
 }

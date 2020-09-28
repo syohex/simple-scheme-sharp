@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 
 namespace SimpleScheme.Lib
@@ -90,6 +91,7 @@ namespace SimpleScheme.Lib
             InstallBuiltinFunction(table, "apply", Apply, 1, true);
 
             InstallBuiltinFunction(table, "eval", Eval, 2, false);
+            InstallBuiltinFunction(table, "load", Load, 1, false);
         }
 
         private static SchemeObject NewEnvironment(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -491,10 +493,38 @@ namespace SimpleScheme.Lib
         {
             if (args[1].Type != ObjectType.Environment)
             {
-                throw new SyntaxError("2nd argument eval must be an environment");
+                throw new WrongTypeArgument(self, args[1]);
             }
 
             return args[0].Eval(args[1].Value<Environment>());
+        }
+
+        private static SchemeObject Load(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.String)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            var interpreter = env.Interpreter;
+            if (interpreter == null)
+            {
+                throw new InternalException("interpreter is not set");
+            }
+            using var file = File.OpenRead(args[0].Value<string>());
+            var reader = new StreamReader(file);
+            while (true)
+            {
+                var expr = interpreter.Read(reader);
+                if (expr == null)
+                {
+                    break;
+                }
+
+                expr.Eval(env);
+            }
+
+            return SchemeObject.CreateBoolean(true);
         }
     }
 }
