@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using SimpleScheme.Lib;
@@ -13,6 +14,10 @@ namespace SimpleScheme.Test
 
             using var reader = new StringReader(input);
             var v = interpreter.Read(reader);
+            if (v == null)
+            {
+                throw new Exception("Unexpected EOF");
+            }
             Assert.Equal(type, v.Type);
             Assert.Equal(expected, v.Value<TE>());
         }
@@ -150,8 +155,11 @@ namespace SimpleScheme.Test
             {
                 using var reader = new StringReader(input);
                 var v = interpreter.Read(reader);
+                if (v == null)
+                {
+                    throw new Exception("got unexpected EOF");
+                }
                 Assert.Equal(ObjectType.EmptyList, v.Type);
-                Assert.True(v.Equal(interpreter.EmptyList));
             }
         }
 
@@ -161,6 +169,10 @@ namespace SimpleScheme.Test
             var interpreter = new Interpreter();
             using var reader = new StringReader("(42 #t #\\c \"foo\")");
             var v = interpreter.Read(reader);
+            if (v == null)
+            {
+                throw new Exception("got unexpected EOF");
+            }
             var p = v.Value<Pair>();
             Assert.Equal(42, p.Car.Value<long>());
 
@@ -182,6 +194,10 @@ namespace SimpleScheme.Test
             var interpreter = new Interpreter();
             using var reader = new StringReader("(#t . #f)");
             var v = interpreter.Read(reader);
+            if (v == null)
+            {
+                throw new Exception("got unexpected EOF");
+            }
             var p = v.Value<Pair>();
             Assert.True(p.Car.Value<bool>());
             Assert.False(p.Cdr.Value<bool>());
@@ -198,7 +214,7 @@ namespace SimpleScheme.Test
             };
 
             var interpreter = new Interpreter();
-            var objs = new List<SchemeObject>();
+            var objs = new List<SchemeObject?>();
             foreach (var input in inputs)
             {
                 using var reader = new StringReader(input);

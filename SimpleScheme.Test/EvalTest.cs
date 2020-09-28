@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using SimpleScheme.Lib;
@@ -7,6 +8,18 @@ namespace SimpleScheme.Test
 {
     public class EvalTest
     {
+        private static SchemeObject ReadEval(Interpreter interpreter, string input)
+        {
+            using var reader = new StringReader(input);
+            var expr = interpreter.Read(reader);
+            if (expr == null)
+            {
+                throw new Exception("input is invalid");
+            }
+
+            return interpreter.Eval(expr);
+        }
+
         [Fact]
         public void EvalSelfEvaluated()
         {
@@ -40,9 +53,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -60,9 +71,7 @@ namespace SimpleScheme.Test
 
             foreach (var input in inputs)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                interpreter.Eval(expr);
+                ReadEval(interpreter, input);
             }
 
             var tests = new[]
@@ -73,9 +82,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -94,9 +101,7 @@ namespace SimpleScheme.Test
 
             foreach (var input in inputs)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                interpreter.Eval(expr);
+                ReadEval(interpreter, input);
             }
 
             var tests = new[]
@@ -107,9 +112,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -127,16 +130,12 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
 
             {
-                using var reader = new StringReader("(if #f 10)");
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, "(if #f 10)");
                 Assert.True(got.IsUndefined());
             }
         }
@@ -174,10 +173,8 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
-                Assert.Equal(got.Value<bool>(), expected);
+                var got = ReadEval(interpreter, input);
+                Assert.True(got.Value<bool>() == expected);
             }
         }
 
@@ -200,9 +197,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
 
@@ -216,9 +211,7 @@ namespace SimpleScheme.Test
             var ret = new List<SchemeObject>();
             foreach (var input in inputs)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                ret.Add(interpreter.Eval(expr));
+                ret.Add(ReadEval(interpreter, input));
             }
 
             Assert.True(ret[0].Equal(ret[1]));
@@ -247,9 +240,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -259,9 +250,7 @@ namespace SimpleScheme.Test
         {
             var interpreter = new Interpreter();
             {
-                using var reader = new StringReader("(cons 1 '(\"foo\"))");
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, "(cons 1 '(\"foo\"))");
                 var pair = got.Value<Pair>();
                 Assert.True(pair.Car.Equal(SchemeObject.CreateFixnum(1)));
                 Assert.True(pair.Cdr.Value<Pair>().Car.Equal(SchemeObject.CreateString("foo")));
@@ -278,9 +267,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
 
@@ -295,9 +282,7 @@ namespace SimpleScheme.Test
             SchemeObject ret = SchemeObject.CreateUndefined();
             foreach (var input in inputs)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                ret = interpreter.Eval(expr);
+                ret = ReadEval(interpreter, input);
             }
 
             Pair val = ret.Value<Pair>();
@@ -319,9 +304,7 @@ namespace SimpleScheme.Test
             var interpreter = new Interpreter();
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.Equal(got.Value<bool>(), expected);
             }
         }
@@ -337,9 +320,7 @@ namespace SimpleScheme.Test
             var interpreter = new Interpreter();
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -357,9 +338,7 @@ namespace SimpleScheme.Test
 
             foreach (var input in inputs)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                interpreter.Eval(expr);
+                ReadEval(interpreter, input);
             }
 
             var tests = new[]
@@ -371,9 +350,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -390,9 +367,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -410,9 +385,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -431,9 +404,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -453,9 +424,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -475,9 +444,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }
@@ -494,9 +461,7 @@ namespace SimpleScheme.Test
             };
             foreach (var input in inputs)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                interpreter.Eval(expr);
+                ReadEval(interpreter, input);
             }
 
             var tests = new[]
@@ -507,9 +472,7 @@ namespace SimpleScheme.Test
 
             foreach (var (input, expected) in tests)
             {
-                using var reader = new StringReader(input);
-                var expr = interpreter.Read(reader);
-                var got = interpreter.Eval(expr);
+                var got = ReadEval(interpreter, input);
                 Assert.True(got.Equal(expected));
             }
         }

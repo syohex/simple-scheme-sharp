@@ -9,14 +9,12 @@ namespace SimpleScheme.Lib
     {
         private readonly SchemeObject _trueObj;
         private readonly SchemeObject _falseObj;
-        public SchemeObject EmptyList { get; }
         private readonly SymbolTable _globalSymbolTable;
 
         public Interpreter()
         {
             _trueObj = SchemeObject.CreateBoolean(true);
             _falseObj = SchemeObject.CreateBoolean(false);
-            EmptyList = SchemeObject.CreateEmptyList();
 
             _globalSymbolTable = new SymbolTable();
 
@@ -229,15 +227,20 @@ namespace SimpleScheme.Lib
 
             if (c == ')')
             {
-                return EmptyList;
+                return SchemeObject.CreateEmptyList();
             }
 
             r.PutBackCharacter(c);
 
-            SchemeObject car = Read(r);
+            SchemeObject? car = Read(r);
+            if (car == null)
+            {
+                throw new SyntaxError("Unexpected EOF");
+            }
+
             r.SkipWhiteSpaces();
 
-            SchemeObject cdr;
+            SchemeObject? cdr;
             c = r.NextChar();
             if (c == '.') // dotted pair
             {
@@ -247,6 +250,11 @@ namespace SimpleScheme.Lib
                 }
 
                 cdr = Read(r);
+                if (cdr == null)
+                {
+                    throw new SyntaxError("Unexpected EOF");
+                }
+
                 r.SkipWhiteSpaces();
 
                 c = r.NextChar();
@@ -292,11 +300,15 @@ namespace SimpleScheme.Lib
             return Intern(sb.ToString());
         }
 
-        private SchemeObject Read(Reader r)
+        private SchemeObject? Read(Reader r)
         {
             r.SkipWhiteSpaces();
 
             var c = r.NextChar();
+            if (c == -1)
+            {
+                return null;
+            }
 
             // Number(Fixnum, Float)
             if (char.IsDigit((char) c) || ((c == '+' || c == '-') && char.IsDigit((char) r.Peek())))
@@ -348,7 +360,13 @@ namespace SimpleScheme.Lib
             if (c == '\'')
             {
                 var quote = Intern("quote");
-                var rest = SchemeObject.CreatePair(Read(r), SchemeObject.CreateEmptyList());
+                var quoted = Read(r);
+                if (quoted == null)
+                {
+                    throw new SyntaxError("unexpected EOF");
+                }
+
+                var rest = SchemeObject.CreatePair(quoted, SchemeObject.CreateEmptyList());
                 return SchemeObject.CreatePair(quote, rest);
             }
 
@@ -361,7 +379,7 @@ namespace SimpleScheme.Lib
             throw new UnsupportedDataType("got unsupported data type");
         }
 
-        public SchemeObject Read(TextReader reader)
+        public SchemeObject? Read(TextReader reader)
         {
             return Read(new Reader(reader));
         }
@@ -369,11 +387,6 @@ namespace SimpleScheme.Lib
         public SchemeObject Eval(SchemeObject expr)
         {
             return expr.Eval(new Environment(_globalSymbolTable));
-        }
-
-        public bool IsEmptyList(SchemeObject obj)
-        {
-            return EmptyList == obj;
         }
     }
 }
