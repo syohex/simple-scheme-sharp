@@ -520,5 +520,56 @@ namespace SimpleScheme.Test
 
             File.Delete(tempFile);
         }
+
+        [Fact]
+        public void EvalPort()
+        {
+            var tempFileIn = Path.GetTempFileName();
+            using (File.Create(tempFileIn))
+            {
+                // create empty file
+            }
+
+            var tempFileOut = Path.GetTempFileName();
+            using (var stream = new StreamWriter(tempFileOut))
+            {
+                stream.Write("hello world");
+            }
+
+            var interpreter = new Interpreter();
+            var inputs = new[]
+            {
+                $"(define i-port (open-input-file \"{tempFileIn}\"))",
+                $"(define o-port (open-output-file \"{tempFileOut}\"))",
+            };
+            foreach (var input in inputs)
+            {
+                ReadEval(interpreter, input);
+            }
+            var tests = new[]
+            {
+                ("(input-port? i-port)", SchemeObject.CreateBoolean(true)),
+                ("(input-port? o-port)", SchemeObject.CreateBoolean(false)),
+
+                ("(output-port? i-port)", SchemeObject.CreateBoolean(false)),
+                ("(output-port? o-port)", SchemeObject.CreateBoolean(true)),
+
+                ("(eof-object? i-port)", SchemeObject.CreateBoolean(true)),
+                ("(eof-object? o-port)", SchemeObject.CreateBoolean(false)),
+
+                ("(close-input-port i-port)", SchemeObject.CreateBoolean(true)),
+                ("(close-output-port o-port)", SchemeObject.CreateBoolean(true)),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                var got = ReadEval(interpreter, input);
+                Assert.True(got.Equal(expected));
+            }
+
+            File.Delete(tempFileIn);
+            File.Delete(tempFileOut);
+        }
+
     }
 }

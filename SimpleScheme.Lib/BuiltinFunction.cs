@@ -92,6 +92,15 @@ namespace SimpleScheme.Lib
 
             InstallBuiltinFunction(table, "eval", Eval, 2, false);
             InstallBuiltinFunction(table, "load", Load, 1, false);
+
+            // port
+            InstallBuiltinFunction(table, "open-input-file", OpenInputFile, 1, false);
+            InstallBuiltinFunction(table, "close-input-port", CloseInputPort, 1, false);
+            InstallBuiltinFunction(table, "input-port?", IsInputPort, 1, false);
+            InstallBuiltinFunction(table, "open-output-file", OpenOutputFile, 1, false);
+            InstallBuiltinFunction(table, "close-output-port", CloseOutputPort, 1, false);
+            InstallBuiltinFunction(table, "output-port?", IsOutputPort, 1, false);
+            InstallBuiltinFunction(table, "eof-object?", IsEof, 1, false);
         }
 
         private static SchemeObject NewEnvironment(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -511,6 +520,7 @@ namespace SimpleScheme.Lib
             {
                 throw new InternalException("interpreter is not set");
             }
+
             using var file = File.OpenRead(args[0].Value<string>());
             var reader = new StreamReader(file);
             while (true)
@@ -525,6 +535,71 @@ namespace SimpleScheme.Lib
             }
 
             return SchemeObject.CreateBoolean(true);
+        }
+
+        private static SchemeObject OpenInputFile(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.String)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            var file = File.Open(args[0].Value<string>(), FileMode.Open, FileAccess.Read);
+            return SchemeObject.CreateInputPort(file);
+        }
+
+        private static SchemeObject CloseInputPort(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.InputPort)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            args[0].Value<FileStream>().Close();
+            return SchemeObject.CreateBoolean(true);
+        }
+
+        private static SchemeObject IsInputPort(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            return SchemeObject.CreateBoolean(args[0].Type == ObjectType.InputPort);
+        }
+
+        private static SchemeObject OpenOutputFile(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.String)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            var file = File.Open(args[0].Value<string>(), FileMode.Open, FileAccess.Write, FileShare.None);
+            return SchemeObject.CreateOutputPort(file);
+        }
+
+        private static SchemeObject CloseOutputPort(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.OutputPort)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            args[0].Value<FileStream>().Close();
+            return SchemeObject.CreateBoolean(true);
+        }
+
+        private static SchemeObject IsOutputPort(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            return SchemeObject.CreateBoolean(args[0].Type == ObjectType.OutputPort);
+        }
+
+        private static SchemeObject IsEof(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (!(args[0].Type == ObjectType.InputPort || args[0].Type == ObjectType.OutputPort))
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            var file = args[0].Value<FileStream>();
+            return SchemeObject.CreateBoolean(file.Length == file.Position);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 
 namespace SimpleScheme.Lib
 {
@@ -18,7 +19,9 @@ namespace SimpleScheme.Lib
         SpecialForm,
         BuiltinFunction,
         Closure,
-        Environment
+        Environment,
+        InputPort,
+        OutputPort,
     }
 
     public class Pair
@@ -208,6 +211,16 @@ namespace SimpleScheme.Lib
         public static SchemeObject CreateEnvironment(SymbolTable globalTable)
         {
             return new SchemeObject(ObjectType.Environment, new Environment(globalTable, null));
+        }
+
+        public static SchemeObject CreateInputPort(FileStream value)
+        {
+            return new SchemeObject(ObjectType.InputPort, value);
+        }
+
+        public static SchemeObject CreateOutputPort(FileStream value)
+        {
+            return new SchemeObject(ObjectType.OutputPort, value);
         }
 
         public T Value<T>()
