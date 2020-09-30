@@ -315,6 +315,38 @@ namespace SimpleScheme.Test
         }
 
         [Fact]
+        public void EvalNumericComparison()
+        {
+            var tests = new[]
+            {
+                ("(= 1 2)", SchemeObject.CreateBoolean(false)),
+                ("(= 1 1)", SchemeObject.CreateBoolean(true)),
+                ("(= 1.0 1.0)", SchemeObject.CreateBoolean(true)),
+                ("(/= 1 1)", SchemeObject.CreateBoolean(false)),
+                ("(/= 1 0)", SchemeObject.CreateBoolean(true)),
+                ("(> 2 1)", SchemeObject.CreateBoolean(true)),
+                ("(> 1 2)", SchemeObject.CreateBoolean(false)),
+                ("(> 1 1)", SchemeObject.CreateBoolean(false)),
+                ("(>= 3 2)", SchemeObject.CreateBoolean(true)),
+                ("(>= 2 2)", SchemeObject.CreateBoolean(true)),
+                ("(>= 1 2)", SchemeObject.CreateBoolean(false)),
+                ("(< 1 2)", SchemeObject.CreateBoolean(true)),
+                ("(< 2 1)", SchemeObject.CreateBoolean(false)),
+                ("(< 1 1)", SchemeObject.CreateBoolean(false)),
+                ("(<= 2 3)", SchemeObject.CreateBoolean(true)),
+                ("(<= 2 2)", SchemeObject.CreateBoolean(true)),
+                ("(<= 2 1)", SchemeObject.CreateBoolean(false)),
+            };
+
+            var interpreter = new Interpreter();
+            foreach (var (input, expected) in tests)
+            {
+                var got = ReadEval(interpreter, input);
+                Assert.True(got.Equal(expected));
+            }
+        }
+
+        [Fact]
         public void EvalLambda()
         {
             var tests = new[]
