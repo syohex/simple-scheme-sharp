@@ -213,7 +213,7 @@ namespace SimpleScheme.Lib
             return new SchemeObject(ObjectType.Environment, new Environment(globalTable, null));
         }
 
-        public static SchemeObject CreateInputPort(FileStream value)
+        public static SchemeObject CreateInputPort(StreamReader value)
         {
             return new SchemeObject(ObjectType.InputPort, value);
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -101,6 +102,10 @@ namespace SimpleScheme.Lib
             InstallBuiltinFunction(table, "close-output-port", CloseOutputPort, 1, false);
             InstallBuiltinFunction(table, "output-port?", IsOutputPort, 1, false);
             InstallBuiltinFunction(table, "eof-object?", IsEof, 1, false);
+
+            InstallBuiltinFunction(table, "read", Read, 1, true);
+            InstallBuiltinFunction(table, "read-char", ReadChar, 1, true);
+            InstallBuiltinFunction(table, "peek-char", PeekChar, 1, true);
         }
 
         private static SchemeObject NewEnvironment(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -544,8 +549,7 @@ namespace SimpleScheme.Lib
                 throw new WrongTypeArgument(self, args[0]);
             }
 
-            var file = File.Open(args[0].Value<string>(), FileMode.Open, FileAccess.Read);
-            return SchemeObject.CreateInputPort(file);
+            return SchemeObject.CreateInputPort(new StreamReader(args[0].Value<string>()));
         }
 
         private static SchemeObject CloseInputPort(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -555,7 +559,7 @@ namespace SimpleScheme.Lib
                 throw new WrongTypeArgument(self, args[0]);
             }
 
-            args[0].Value<FileStream>().Close();
+            args[0].Value<StreamReader>().Close();
             return SchemeObject.CreateBoolean(true);
         }
 
@@ -598,8 +602,59 @@ namespace SimpleScheme.Lib
                 throw new WrongTypeArgument(self, args[0]);
             }
 
+            if (args[0].Type == ObjectType.InputPort)
+            {
+                var stream = args[0].Value<StreamReader>();
+                return SchemeObject.CreateBoolean(stream.BaseStream.Length == stream.BaseStream.Position);
+            }
+
             var file = args[0].Value<FileStream>();
             return SchemeObject.CreateBoolean(file.Length == file.Position);
+        }
+
+        private static StreamReader ArgToInputPort(List<SchemeObject> args, BuiltinFunction self)
+        {
+            switch (args.Count)
+            {
+                case 0:
+                    return new StreamReader(Console.OpenStandardInput(), Console.InputEncoding);
+                case 1:
+                {
+                    if (args[0].Type != ObjectType.InputPort)
+                    {
+                        throw new WrongTypeArgument(self, args[0]);
+                    }
+
+                    return args[0].Value<StreamReader>();
+                }
+                default:
+                    throw new WrongNumberArguments(self, args.Count);
+            }
+        }
+
+
+        private static SchemeObject Read(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            StreamReader stream = ArgToInputPort(args, self);
+            var ret = env.Interpreter?.Read(stream);
+            if (ret == null)
+            {
+                throw new SyntaxError("unexpected EOF");
+            }
+
+            return ret;
+        }
+
+        private static SchemeObject ReadChar(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            StreamReader stream = ArgToInputPort(args, self);
+            return SchemeObject.CreateCharacter((char) stream.Read());
+        }
+
+        private static SchemeObject PeekChar(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            StreamReader stream = ArgToInputPort(args, self);
+            return SchemeObject.CreateCharacter((char) stream.Peek());
         }
     }
 }

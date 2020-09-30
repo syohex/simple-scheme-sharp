@@ -546,6 +546,7 @@ namespace SimpleScheme.Test
             {
                 ReadEval(interpreter, input);
             }
+
             var tests = new[]
             {
                 ("(input-port? i-port)", SchemeObject.CreateBoolean(true)),
@@ -571,5 +572,50 @@ namespace SimpleScheme.Test
             File.Delete(tempFileOut);
         }
 
+        [Fact]
+        public void EvalReadPort()
+        {
+            var tempFile1 = Path.GetTempFileName();
+            using (var stream = new StreamWriter(tempFile1))
+            {
+                stream.Write("hello world");
+            }
+
+            var tempFile2 = Path.GetTempFileName();
+            using (var stream = new StreamWriter(tempFile2))
+            {
+                stream.Write("#t");
+            }
+
+            var interpreter = new Interpreter();
+            var inputs = new[]
+            {
+                $"(define i-port1 (open-input-file \"{tempFile1}\"))",
+                $"(define i-port2 (open-input-file \"{tempFile2}\"))",
+            };
+            foreach (var input in inputs)
+            {
+                ReadEval(interpreter, input);
+            }
+
+            var tests = new[]
+            {
+                ("(read-char i-port1)", SchemeObject.CreateCharacter('h')),
+                ("(peek-char i-port1)", SchemeObject.CreateCharacter('e')),
+                ("(peek-char i-port1)", SchemeObject.CreateCharacter('e')),
+                ("(read i-port2)", SchemeObject.CreateBoolean(true)),
+                ("(close-input-port i-port1)", SchemeObject.CreateBoolean(true)),
+                ("(close-input-port i-port2)", SchemeObject.CreateBoolean(true)),
+            };
+
+            foreach (var (input, expected) in tests)
+            {
+                var got = ReadEval(interpreter, input);
+                Assert.True(got.Equal(expected));
+            }
+
+            File.Delete(tempFile1);
+            File.Delete(tempFile2);
+        }
     }
 }
