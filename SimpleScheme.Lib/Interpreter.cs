@@ -388,5 +388,28 @@ namespace SimpleScheme.Lib
         {
             return expr.Eval(new Environment(_globalSymbolTable, this));
         }
+
+        public SchemeObject EvalFile(string file)
+        {
+            using var r = new StreamReader(file);
+            return EvalStream(r);
+        }
+
+        public SchemeObject EvalStream(StreamReader stream)
+        {
+            var ret = SchemeObject.CreateUndefined();
+            while (true)
+            {
+                var expr = Read(stream);
+                if (expr == null)
+                {
+                    break;
+                }
+
+                ret = Eval(expr);
+            }
+
+            return ret;
+        }
     }
 }

@@ -13,6 +13,7 @@ namespace SimpleScheme.Lib
             BuiltinFunction self);
 
         private readonly BuiltinFunctionCode _code;
+        private static double floatEpsilon = 1.0e-10;
 
         private BuiltinFunction(string name, BuiltinFunctionCode code, int arity, bool variadic) : base(name, arity,
             variadic)
@@ -88,6 +89,14 @@ namespace SimpleScheme.Lib
 
             // compare
             InstallBuiltinFunction(table, "eq?", Eq, 2, false);
+
+            // numeric compare
+            InstallBuiltinFunction(table, "=", NumericEq, 2, false);
+            InstallBuiltinFunction(table, "/=", NumericNotEq, 2, false);
+            InstallBuiltinFunction(table, ">", NumericGreaterThan, 2, false);
+            InstallBuiltinFunction(table, ">=", NumericGreaterThanEqual, 2, false);
+            InstallBuiltinFunction(table, "<", NumericLessThan, 2, false);
+            InstallBuiltinFunction(table, "<=", NumericLessThanEqual, 2, false);
 
             // function
             InstallBuiltinFunction(table, "apply", Apply, 1, true);
@@ -470,6 +479,85 @@ namespace SimpleScheme.Lib
                 default:
                     return SchemeObject.CreateBoolean(args[0] == args[1]);
             }
+        }
+
+        private static SchemeObject NumericEq(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var (val1, isFloat1) = RetrieveNumber(args[0], self);
+            var (val2, isFloat2) = RetrieveNumber(args[1], self);
+
+            if (isFloat1 || isFloat2)
+            {
+                return SchemeObject.CreateBoolean(Math.Abs(val1 - val2) < floatEpsilon);
+            }
+
+            return SchemeObject.CreateBoolean((long) val1 == (long) val2);
+        }
+
+        private static SchemeObject NumericNotEq(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var (val1, isFloat1) = RetrieveNumber(args[0], self);
+            var (val2, isFloat2) = RetrieveNumber(args[1], self);
+
+            if (isFloat1 || isFloat2)
+            {
+                return SchemeObject.CreateBoolean(!(Math.Abs(val1 - val2) < floatEpsilon));
+            }
+
+            return SchemeObject.CreateBoolean((long) val1 != (long) val2);
+        }
+
+        private static SchemeObject NumericGreaterThan(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var (val1, isFloat1) = RetrieveNumber(args[0], self);
+            var (val2, isFloat2) = RetrieveNumber(args[1], self);
+
+            if (isFloat1 || isFloat2)
+            {
+                return SchemeObject.CreateBoolean(val1 > val2);
+            }
+
+            return SchemeObject.CreateBoolean((long) val1 > (long) val2);
+        }
+
+        private static SchemeObject NumericGreaterThanEqual(Environment env, List<SchemeObject> args,
+            BuiltinFunction self)
+        {
+            var (val1, isFloat1) = RetrieveNumber(args[0], self);
+            var (val2, isFloat2) = RetrieveNumber(args[1], self);
+
+            if (isFloat1 || isFloat2)
+            {
+                return SchemeObject.CreateBoolean(val1 >= val2);
+            }
+
+            return SchemeObject.CreateBoolean((long) val1 >= (long) val2);
+        }
+
+        private static SchemeObject NumericLessThan(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var (val1, isFloat1) = RetrieveNumber(args[0], self);
+            var (val2, isFloat2) = RetrieveNumber(args[1], self);
+
+            if (isFloat1 || isFloat2)
+            {
+                return SchemeObject.CreateBoolean(val1 < val2);
+            }
+
+            return SchemeObject.CreateBoolean((long) val1 < (long) val2);
+        }
+
+        private static SchemeObject NumericLessThanEqual(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var (val1, isFloat1) = RetrieveNumber(args[0], self);
+            var (val2, isFloat2) = RetrieveNumber(args[1], self);
+
+            if (isFloat1 || isFloat2)
+            {
+                return SchemeObject.CreateBoolean(val1 <= val2);
+            }
+
+            return SchemeObject.CreateBoolean((long) val1 <= (long) val2);
         }
 
         private static SchemeObject Apply(Environment env, List<SchemeObject> args, BuiltinFunction self)

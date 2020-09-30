@@ -14,6 +14,17 @@ namespace SimpleScheme.Lib
             _table = new Dictionary<SchemeObject, SchemeObject>();
         }
 
+        public List<string> Keys()
+        {
+            var ret = new List<string>();
+            foreach (KeyValuePair<SchemeObject, SchemeObject> entry in _table)
+            {
+                ret.Add(entry.Key.ToString());
+            }
+
+            return ret;
+        }
+
         public SchemeObject? LookUpSymbol(string name)
         {
             foreach (KeyValuePair<SchemeObject, SchemeObject> entry in _table)
