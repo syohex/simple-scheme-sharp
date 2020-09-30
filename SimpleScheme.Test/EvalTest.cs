@@ -617,5 +617,38 @@ namespace SimpleScheme.Test
             File.Delete(tempFile1);
             File.Delete(tempFile2);
         }
+
+        [Fact]
+        public void EvalWritePort()
+        {
+            var tempFile = Path.GetTempFileName();
+            using (File.Create(tempFile))
+            {
+                // create empty file
+            }
+
+            var interpreter = new Interpreter();
+            var inputs = new[]
+            {
+                $"(define o-port (open-output-file \"{tempFile}\"))",
+                "(write 1234 o-port)",
+                "(write-char #\\newline o-port)",
+                "(write \"foo bar\" o-port)",
+                "(write-char #\\newline o-port)",
+                "(write '(1 2 3) o-port)",
+                "(write-char #\\newline o-port)",
+                "(close-output-port o-port)",
+            };
+            foreach (var input in inputs)
+            {
+                ReadEval(interpreter, input);
+            }
+
+            var expected = "1234\n\"foo bar\"\n(1 2 3)\n";
+            var content = File.ReadAllText(tempFile);
+
+            Assert.Equal(expected, content);
+            File.Delete(tempFile);
+        }
     }
 }

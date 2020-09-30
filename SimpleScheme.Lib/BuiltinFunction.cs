@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace SimpleScheme.Lib
 {
@@ -106,6 +107,11 @@ namespace SimpleScheme.Lib
             InstallBuiltinFunction(table, "read", Read, 1, true);
             InstallBuiltinFunction(table, "read-char", ReadChar, 1, true);
             InstallBuiltinFunction(table, "peek-char", PeekChar, 1, true);
+
+            InstallBuiltinFunction(table, "write", Write, 1, true);
+            InstallBuiltinFunction(table, "write-char", WriteChar, 1, true);
+
+            InstallBuiltinFunction(table, "error", Error, 1, false);
         }
 
         private static SchemeObject NewEnvironment(Environment env, List<SchemeObject> args, BuiltinFunction self)
@@ -655,6 +661,61 @@ namespace SimpleScheme.Lib
         {
             StreamReader stream = ArgToInputPort(args, self);
             return SchemeObject.CreateCharacter((char) stream.Peek());
+        }
+
+        private static SchemeObject Write(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            Stream stream;
+            if (args.Count == 1)
+            {
+                stream = Console.OpenStandardOutput();
+            }
+            else
+            {
+                if (args[1].Type != ObjectType.OutputPort)
+                {
+                    throw new WrongTypeArgument(self, args[0]);
+                }
+
+                stream = args[1].Value<FileStream>();
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(args[0].ToString());
+            stream.Write(bytes, 0, bytes.Length);
+            return SchemeObject.CreateBoolean(true);
+        }
+
+        private static SchemeObject WriteChar(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            if (args[0].Type != ObjectType.Character)
+            {
+                throw new WrongTypeArgument(self, args[0]);
+            }
+
+            Stream stream;
+            if (args.Count == 1)
+            {
+                stream = Console.OpenStandardOutput();
+            }
+            else
+            {
+                if (args[1].Type != ObjectType.OutputPort)
+                {
+                    throw new WrongTypeArgument(self, args[0]);
+                }
+
+                stream = args[1].Value<FileStream>();
+            }
+
+            stream.WriteByte((byte) args[0].Value<char>());
+            return SchemeObject.CreateBoolean(true);
+        }
+
+        private static SchemeObject Error(Environment env, List<SchemeObject> args, BuiltinFunction self)
+        {
+            var bytes = Encoding.UTF8.GetBytes(args[0].ToString());
+            Console.OpenStandardError().Write(bytes, 0, bytes.Length);
+            return SchemeObject.CreateBoolean(true);
         }
     }
 }
