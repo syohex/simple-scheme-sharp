@@ -9,6 +9,8 @@ namespace SimpleScheme
     {
         static void Repl(Interpreter interpreter)
         {
+            Console.WriteLine("Welcome to SimpleScheme");
+
             var reader = new StreamReader(Console.OpenStandardInput());
             var stdout = Console.OpenStandardOutput();
             while (true)
@@ -59,6 +61,7 @@ namespace SimpleScheme
             if (args.Length == 0)
             {
                 Repl(interpreter);
+                return;
             }
 
             foreach (var arg in args)
